@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, forwardRef } from 'react';
 import { theme } from '../../theme/designTokens';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatPercent } from '../../utils/formatters';
 import { ChartScale, calculateCandleGeometry } from '../core/ChartScales';
 
 export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
@@ -20,8 +20,23 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const [internalHoverIndex, setHoverIndex] = useState(null);
+  const [containerWidth, setContainerWidth] = useState(0);
 
   const hoverIndex = externalHoverIndex !== null ? externalHoverIndex : internalHoverIndex;
+
+  // Responsive Container ResizeObserver
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0) {
+          setContainerWidth(entry.contentRect.width);
+        }
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Keyboard navigation listener (Left/Right arrow keys)
   useEffect(() => {
@@ -51,7 +66,7 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = containerRef.current.getBoundingClientRect();
-    const width = rect.width;
+    const width = rect.width || containerWidth || 800;
     if (width <= 0 || height <= 0) return;
 
     const dpr = window.devicePixelRatio || 1;
@@ -89,13 +104,17 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       if (d.volume > maxVolume) maxVolume = d.volume;
     });
 
-    const priceRange = (maxPrice - minPrice) || 1;
-    const priceScale = new ChartScale(minPrice, maxPrice, marginTop + chartHeight, marginTop);
+    // Add 2% padding to price bounds to prevent clipping candles
+    const pricePadding = ((maxPrice - minPrice) || 1) * 0.02;
+    minPrice = Math.max(0, minPrice - pricePadding);
+    maxPrice += pricePadding;
+    const priceRange = maxPrice - minPrice;
 
+    const priceScale = new ChartScale(minPrice, maxPrice, marginTop + chartHeight, marginTop);
     const stepX = chartWidth / visibleData.length;
 
-    // Grid Lines & Price Labels
-    ctx.strokeStyle = theme.colors.border;
+    // Subtle Horizontal & Vertical Grid Lines
+    ctx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
     ctx.lineWidth = 0.5;
     ctx.fillStyle = theme.colors.textMuted;
     ctx.font = `11px ${theme.fonts.mono}`;
@@ -114,57 +133,57 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       ctx.fillText(`$${priceVal.toFixed(2)}`, marginLeft + chartWidth + 6, yPos + 4);
     }
 
-    // Volume Bars (bottom 25% of chart)
+    // Time Axis Tick Labels at bottom
+    const tickStep = Math.max(1, Math.floor(visibleData.length / 6));
+    ctx.textAlign = 'center';
+    visibleData.forEach((d, i) => {
+      if (i % tickStep === 0) {
+        const xPos = ChartScale.indexToX(i, stepX, marginLeft);
+        ctx.fillText(d.date || `P-${i}`, xPos, height - 8);
+      }
+    });
+
+    // Integrated Volume Bars (bottom 22% of chart)
     if (showVolume && maxVolume > 0) {
-      const volumeMaxH = chartHeight * 0.25;
+      const volumeMaxH = chartHeight * 0.22;
       visibleData.forEach((d, i) => {
         const x = ChartScale.indexToX(i, stepX, marginLeft);
         const isBull = d.close >= d.open;
         const volH = (d.volume / maxVolume) * volumeMaxH;
         const y = marginTop + chartHeight - volH;
 
-        ctx.fillStyle = isBull ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)';
+        ctx.fillStyle = isBull ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)';
         ctx.fillRect(x - (stepX * 0.7) / 2, y, stepX * 0.7, volH);
       });
     }
 
-    // Candlesticks via CandleGeometry Engine
-    visibleData.forEach((d, i) => {
-      const geom = calculateCandleGeometry(d, i, stepX, marginLeft, priceScale);
-      const color = geom.isBullish ? theme.colors.gain : theme.colors.loss;
-
-      // Wick
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.2;
+    // Technical Bollinger Bands Envelope Area & Translucent Fill
+    if (showBollinger) {
+      // Translucent Band Fill
+      ctx.fillStyle = 'rgba(139, 92, 246, 0.08)';
       ctx.beginPath();
-      ctx.moveTo(geom.x, geom.yHigh);
-      ctx.lineTo(geom.x, geom.yLow);
-      ctx.stroke();
-
-      // Body
-      ctx.fillStyle = color;
-      ctx.fillRect(geom.x - geom.candleWidth / 2, geom.bodyY, geom.candleWidth, geom.bodyHeight);
-    });
-
-    // Technical SMA 20 Overlay
-    if (showSma) {
-      ctx.strokeStyle = theme.colors.accentCyan;
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      let started = false;
+      let startedUpper = false;
       visibleData.forEach((d, i) => {
-        if (d.sma20) {
+        if (d.bollingerUpper !== null && d.bollingerUpper !== undefined) {
           const x = ChartScale.indexToX(i, stepX, marginLeft);
-          const y = priceScale.priceToY(d.sma20);
-          if (!started) { ctx.moveTo(x, y); started = true; }
+          const y = priceScale.priceToY(d.bollingerUpper);
+          if (!startedUpper) { ctx.moveTo(x, y); startedUpper = true; }
           else { ctx.lineTo(x, y); }
         }
       });
-      ctx.stroke();
-    }
 
-    // Technical Bollinger Bands Overlay
-    if (showBollinger) {
+      for (let i = visibleData.length - 1; i >= 0; i--) {
+        const d = visibleData[i];
+        if (d.bollingerLower !== null && d.bollingerLower !== undefined) {
+          const x = ChartScale.indexToX(i, stepX, marginLeft);
+          const y = priceScale.priceToY(d.bollingerLower);
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // Band Lines
       ctx.strokeStyle = theme.colors.accentPurple;
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
@@ -195,7 +214,78 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       ctx.setLineDash([]);
     }
 
-    // Synchronized Crosshair Cursor & Axis Badges
+    // Candlesticks via CandleGeometry Engine
+    visibleData.forEach((d, i) => {
+      const geom = calculateCandleGeometry(d, i, stepX, marginLeft, priceScale);
+      const color = geom.isBullish ? theme.colors.gain : theme.colors.loss;
+
+      // Wick line
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(geom.x, geom.yHigh);
+      ctx.lineTo(geom.x, geom.yLow);
+      ctx.stroke();
+
+      // Candle body
+      ctx.fillStyle = color;
+      ctx.fillRect(geom.x - geom.candleWidth / 2, geom.bodyY, geom.candleWidth, geom.bodyHeight);
+    });
+
+    // Technical SMA 20 Overlay (Cyan line)
+    if (showSma) {
+      ctx.strokeStyle = theme.colors.accentCyan;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      let started = false;
+      visibleData.forEach((d, i) => {
+        if (d.sma20) {
+          const x = ChartScale.indexToX(i, stepX, marginLeft);
+          const y = priceScale.priceToY(d.sma20);
+          if (!started) { ctx.moveTo(x, y); started = true; }
+          else { ctx.lineTo(x, y); }
+        }
+      });
+      ctx.stroke();
+    }
+
+    // Technical EMA 12 Overlay (Gold line)
+    if (showEma) {
+      ctx.strokeStyle = theme.colors.accentGold;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      let started = false;
+      visibleData.forEach((d, i) => {
+        if (d.ema12) {
+          const x = ChartScale.indexToX(i, stepX, marginLeft);
+          const y = priceScale.priceToY(d.ema12);
+          if (!started) { ctx.moveTo(x, y); started = true; }
+          else { ctx.lineTo(x, y); }
+        }
+      });
+      ctx.stroke();
+    }
+
+    // Technical VWAP Overlay (Indigo line)
+    if (showVwap) {
+      ctx.strokeStyle = theme.colors.accentIndigo;
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([4, 2]);
+      ctx.beginPath();
+      let started = false;
+      visibleData.forEach((d, i) => {
+        if (d.vwap) {
+          const x = ChartScale.indexToX(i, stepX, marginLeft);
+          const y = priceScale.priceToY(d.vwap);
+          if (!started) { ctx.moveTo(x, y); started = true; }
+          else { ctx.lineTo(x, y); }
+        }
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Synchronized Crosshair Cursor, Price Badge & Time Badge
     const activeIdxInVisible = hoverIndex !== null ? hoverIndex - startIdx : null;
     if (activeIdxInVisible !== null && activeIdxInVisible >= 0 && activeIdxInVisible < visibleData.length) {
       const activeItem = visibleData[activeIdxInVisible];
@@ -206,33 +296,44 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
 
-      // Vertical line
+      // Vertical guide line
       ctx.beginPath();
       ctx.moveTo(x, marginTop);
       ctx.lineTo(x, marginTop + chartHeight);
       ctx.stroke();
 
-      // Horizontal line
+      // Horizontal guide line
       ctx.beginPath();
       ctx.moveTo(marginLeft, y);
       ctx.lineTo(marginLeft + chartWidth, y);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Price Badge on Y-axis
+      // Price Badge on Y-axis margin
       ctx.fillStyle = theme.colors.accentPrimary;
       ctx.fillRect(marginLeft + chartWidth, y - 10, marginRight - 5, 20);
       ctx.fillStyle = '#ffffff';
       ctx.font = `bold 11px ${theme.fonts.mono}`;
+      ctx.textAlign = 'left';
       ctx.fillText(`$${activeItem.close.toFixed(2)}`, marginLeft + chartWidth + 5, y + 4);
 
-      // Pulse Dot
+      // Date Badge on X-axis margin
+      ctx.fillStyle = theme.colors.bgCardElevated;
+      ctx.fillRect(x - 35, marginTop + chartHeight + 4, 70, 18);
+      ctx.strokeStyle = theme.colors.borderLight;
+      ctx.strokeRect(x - 35, marginTop + chartHeight + 4, 70, 18);
+      ctx.fillStyle = theme.colors.textPrimary;
+      ctx.font = `10px ${theme.fonts.mono}`;
+      ctx.textAlign = 'center';
+      ctx.fillText(activeItem.date || '', x, marginTop + chartHeight + 17);
+
+      // Pulse Dot at cursor intersection
       ctx.fillStyle = theme.colors.accentCyan;
       ctx.beginPath();
       ctx.arc(x, y, 4, 0, Math.PI * 2);
       ctx.fill();
     }
-  }, [data, height, showVolume, showSma, showEma, showBollinger, showVwap, zoomLevel, panOffset, hoverIndex]);
+  }, [data, height, showVolume, showSma, showEma, showBollinger, showVwap, zoomLevel, panOffset, hoverIndex, containerWidth]);
 
   const handleMouseMove = (e) => {
     if (!containerRef.current || !data.length) return;
@@ -269,14 +370,15 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
           top: 8,
           right: 75,
           zIndex: 10,
-          background: 'rgba(30, 41, 59, 0.8)',
+          background: 'rgba(30, 41, 59, 0.85)',
           color: theme.colors.textMuted,
           padding: '2px 8px',
           borderRadius: '4px',
           fontSize: '10px',
           fontFamily: theme.fonts.mono,
           fontWeight: 700,
-          letterSpacing: '0.05em'
+          letterSpacing: '0.05em',
+          border: `1px solid ${theme.colors.border}`
         }}>
           SIMULATED DEMO DATA
         </div>
@@ -285,18 +387,19 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       {activePoint && (
         <div style={{
           position: 'absolute',
-          top: 10,
+          top: 8,
           left: 15,
           zIndex: 10,
-          background: 'rgba(15, 23, 42, 0.9)',
-          backdropFilter: 'blur(8px)',
+          background: 'rgba(15, 23, 42, 0.92)',
+          backdropFilter: 'blur(10px)',
           padding: '6px 14px',
           borderRadius: theme.radius.md,
           border: `1px solid ${theme.colors.borderLight}`,
           display: 'flex',
           gap: '12px',
           fontSize: '12px',
-          fontFamily: theme.fonts.mono
+          fontFamily: theme.fonts.mono,
+          boxShadow: theme.shadows.card
         }}>
           <span style={{ color: theme.colors.textMuted }}>{activePoint.date}</span>
           <span style={{ color: theme.colors.textSecondary }}>O: <b style={{ color: '#fff' }}>{formatCurrency(activePoint.open)}</b></span>
@@ -307,6 +410,9 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
           </span>
           {activePoint.volume && (
             <span style={{ color: theme.colors.textMuted }}>Vol: {activePoint.volume.toLocaleString()}</span>
+          )}
+          {activePoint.sma20 && (
+            <span style={{ color: theme.colors.accentCyan }}>SMA20: ${activePoint.sma20.toFixed(2)}</span>
           )}
         </div>
       )}

@@ -3,7 +3,6 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'rec
 import { theme } from '../../theme/designTokens';
 import { formatCurrency, formatPercent } from '../../utils/formatters';
 
-
 export function LineChartPrimitive({
   data = [],
   height = 350,
@@ -19,25 +18,14 @@ export function LineChartPrimitive({
   const minPrice = useMemo(() => {
     if (!data.length) return 0;
     const prices = data.map(d => d.price || d.close || 0);
-    return Math.floor(Math.min(...prices) * 0.995);
+    return Math.floor(Math.min(...prices) * 0.99);
   }, [data]);
 
   const maxPrice = useMemo(() => {
     if (!data.length) return 100;
     const prices = data.map(d => d.price || d.close || 0);
-    return Math.ceil(Math.max(...prices) * 1.005);
+    return Math.ceil(Math.max(...prices) * 1.01);
   }, [data]);
-
-  const gradientId = useMemo(() => `area-gradient-${Math.random().toString(36).substr(2, 9)}`, []);
-
-  const isPositive = useMemo(() => {
-    if (data.length < 2) return true;
-    const first = data[0].price || data[0].close || 0;
-    const last = data[data.length - 1].price || data[data.length - 1].close || 0;
-    return last >= first;
-  }, [data]);
-
-  const strokeColor = isPositive ? theme.colors.gain : theme.colors.loss;
 
   const handleMouseMove = (state) => {
     if (state && state.activePayload && state.activePayload.length) {
@@ -54,119 +42,103 @@ export function LineChartPrimitive({
 
   if (!data || data.length === 0) {
     return (
-      <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.colors.textMuted }}>
-        No chart data available
+      <div style={{
+        width: '100%',
+        height,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: theme.colors.bgCard,
+        borderRadius: theme.radius.md,
+        color: theme.colors.textMuted,
+        fontFamily: theme.fonts.mono
+      }}>
+        No Chart Data Available
       </div>
     );
   }
 
+  const gradientId = `lineChartGradient-${color.replace('#', '')}`;
+
   return (
     <div style={{ width: '100%', height, position: 'relative', userSelect: 'none' }}>
-      {/* Interactive Tooltip Banner */}
       {hoverData && (
         <div style={{
           position: 'absolute',
-          top: 10,
+          top: 12,
           left: 15,
           zIndex: 10,
-          background: 'rgba(15, 23, 42, 0.85)',
-          backdropFilter: 'blur(8px)',
-          padding: '6px 12px',
+          background: 'rgba(15, 23, 42, 0.92)',
+          backdropFilter: 'blur(10px)',
+          padding: '6px 14px',
           borderRadius: theme.radius.md,
           border: `1px solid ${theme.colors.borderLight}`,
           display: 'flex',
-          gap: '16px',
-          alignItems: 'center',
+          gap: '12px',
+          fontSize: '12px',
           fontFamily: theme.fonts.mono,
-          fontSize: '13px'
+          boxShadow: theme.shadows.card
         }}>
           <span style={{ color: theme.colors.textMuted }}>{hoverData.date}</span>
-          <span style={{ color: theme.colors.textPrimary, fontWeight: 700 }}>
-            {formatCurrency(hoverData.price || hoverData.close)}
+          <span style={{ color: theme.colors.textSecondary }}>
+            Price: <b style={{ color: '#fff' }}>{formatCurrency(hoverData.price || hoverData.close)}</b>
           </span>
-          {hoverData.sma20 && (
-            <span style={{ color: theme.colors.accentCyan }}>SMA20: {formatCurrency(hoverData.sma20)}</span>
-          )}
-          {hoverData.rsi && (
-            <span style={{ color: theme.colors.accentGold }}>RSI: {hoverData.rsi}</span>
+          {hoverData.changePercent !== undefined && (
+            <span style={{ color: hoverData.changePercent >= 0 ? theme.colors.gain : theme.colors.loss }}>
+              {formatPercent(hoverData.changePercent)}
+            </span>
           )}
         </div>
       )}
 
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height={height}>
         <AreaChart
           data={data}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          margin={{ top: 15, right: 10, left: -20, bottom: 0 }}
+          onMouseMove={interactive ? handleMouseMove : undefined}
+          onMouseLeave={interactive ? handleMouseLeave : undefined}
+          margin={{ top: 15, right: 20, left: 10, bottom: 5 }}
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={strokeColor} stopOpacity={0.4} />
-              <stop offset="95%" stopColor={strokeColor} stopOpacity={0.0} />
+              <stop offset="5%" stopColor={color} stopOpacity={0.35} />
+              <stop offset="95%" stopColor={color} stopOpacity={0.0} />
             </linearGradient>
           </defs>
-          <XAxis 
-            dataKey="date" 
-            axisLine={false} 
-            tickLine={false} 
-            tick={{ fill: theme.colors.textMuted, fontSize: 11, fontFamily: theme.fonts.main }} 
-            dy={5}
+
+          <XAxis
+            dataKey="date"
+            stroke={theme.colors.textMuted}
+            fontSize={11}
+            tickLine={false}
+            axisLine={{ stroke: theme.colors.border }}
+            fontFamily={theme.fonts.mono}
           />
-          <YAxis 
-            domain={[minPrice, maxPrice]} 
-            axisLine={false} 
-            tickLine={false} 
-            tick={{ fill: theme.colors.textMuted, fontSize: 11, fontFamily: theme.fonts.mono }} 
-            orientation="right"
+
+          <YAxis
+            domain={[minPrice, maxPrice]}
+            stroke={theme.colors.textMuted}
+            fontSize={11}
+            tickLine={false}
+            axisLine={{ stroke: theme.colors.border }}
             tickFormatter={(val) => `$${val}`}
+            orientation="right"
+            fontFamily={theme.fonts.mono}
           />
-          <Tooltip content={() => null} />
-          
+
+          <Tooltip
+            content={<></>}
+            cursor={{ stroke: 'rgba(248, 250, 252, 0.5)', strokeWidth: 1, strokeDasharray: '4 4' }}
+          />
+
           {showArea && (
             <Area
               type="monotone"
-              dataKey="price"
-              stroke={strokeColor}
-              strokeWidth={2.5}
+              dataKey={d => d.price || d.close}
+              stroke={color}
+              strokeWidth={2}
               fillOpacity={1}
               fill={`url(#${gradientId})`}
-              isAnimationActive={true}
-              animationDuration={800}
             />
-          )}
-
-          {showSma && (
-            <Area
-              type="monotone"
-              dataKey="sma20"
-              stroke={theme.colors.accentCyan}
-              strokeWidth={1.5}
-              strokeDasharray="4 4"
-              fill="none"
-              isAnimationActive={false}
-            />
-          )}
-
-          {showBollinger && (
-            <>
-              <Area
-                type="monotone"
-                dataKey="bollingerUpper"
-                stroke={theme.colors.accentPurple}
-                strokeWidth={1}
-                strokeDasharray="3 3"
-                fill="none"
-              />
-              <Area
-                type="monotone"
-                dataKey="bollingerLower"
-                stroke={theme.colors.accentPurple}
-                strokeWidth={1}
-                strokeDasharray="3 3"
-                fill="none"
-              />
-            </>
           )}
         </AreaChart>
       </ResponsiveContainer>
