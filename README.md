@@ -503,7 +503,7 @@ GitHub-style annual trading calendar heatmap displaying daily performance intens
 - Tooltip popover displaying date, daily return %, and traded volume.
 - Interactive year navigation controls.
 
-![Calendar Heatmap](assets/images/heatmap.svg)
+![Calendar Heatmap](assets/images/calendar-heatmap.svg)
 
 ### Quick Start
 ```jsx
@@ -652,6 +652,9 @@ Canvas Primitives
 Crosshair / Tooltip
 ```
 
+![Chart Layout & Viewport Architecture](assets/images/chart-layout.svg)
+*Chart region layout calculation: width = containerWidth - axisLabelRightOffset, height = containerHeight - axisLabelBottomOffset.*
+
 ---
 
 ### `ChartScales`
@@ -736,6 +739,8 @@ export function lttbDownsample(data: OHLCPoint[], threshold: number): OHLCPoint[
 - Divides intermediate series into `threshold - 2` equal buckets.
 - Computes effective triangle areas per bucket to retain key inflection points.
 - Computational Complexity: $O(N)$ linear execution time.
+
+![LTTB Downsampling Comparison](assets/images/lttb-comparison.svg)
 
 ---
 

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="100%">
+  <rect width="800" height="450" fill="#ffffff" rx="16"/>
+  <rect x="2" y="2" width="796" height="446" fill="none" stroke="#e2e8f0" stroke-width="2" rx="14"/>
+
+  <!-- Main Chart Bounds -->
+  <g transform="translate(100, 60)">
+    <!-- Width Double Arrow Top -->
+    <line x1="0" y1="-20" x2="450" y2="-20" stroke="#000000" stroke-width="1.5"/>
+    <polygon points="0,-20 10,-24 10,-16" fill="#000000"/>
+    <polygon points="450,-20 440,-24 440,-16" fill="#000000"/>
+    <rect x="180" y="-32" width="80" height="24" fill="#f1f5f9" rx="4"/>
+    <text x="220" y="-15" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle">width</text>
+
+    <!-- Height Double Arrow Left -->
+    <line x1="-30" y1="0" x2="-30" y2="300" stroke="#000000" stroke-width="1.5"/>
+    <polygon points="-30,0 -34,10 -26,10" fill="#000000"/>
+    <polygon points="-30,300 -34,290 -26,290" fill="#000000"/>
+    <rect x="-65" y="140" width="70" height="24" fill="#f1f5f9" rx="4"/>
+    <text x="-30" y="156" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle">height</text>
+
+    <!-- Main Plot Region -->
+    <rect x="0" y="0" width="340" height="210" fill="#f8fafc" stroke="#000000" stroke-width="1.5"/>
+
+    <!-- Candlestick Sketches in Plot Region -->
+    <rect x="50" y="40" width="16" height="70" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+    <line x1="58" y1="20" x2="58" y2="130" stroke="#22c55e" stroke-width="1.5"/>
+
+    <rect x="120" y="100" width="16" height="50" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+    <line x1="128" y1="80" x2="128" y2="170" stroke="#ef4444" stroke-width="1.5"/>
+
+    <rect x="190" y="50" width="16" height="80" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+    <line x1="198" y1="30" x2="198" y2="150" stroke="#22c55e" stroke-width="1.5"/>
+
+    <!-- Price-Scale Region Right -->
+    <g transform="translate(340, 0)">
+      <pattern id="diagonalHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+        <line x1="0" y1="0" x2="0" y2="10" stroke="#3b82f6" stroke-width="1" opacity="0.3"/>
+      </pattern>
+      <rect x="0" y="0" width="110" height="210" fill="url(#diagonalHatch)" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="55" y="110" font-family="'Inter', sans-serif" font-size="16" font-weight="bold" fill="#1e3a8a" text-anchor="middle" transform="rotate(-90 55 110)">Price-Scale</text>
+    </g>
+
+    <!-- Time-Scale Region Bottom -->
+    <g transform="translate(0, 210)">
+      <rect x="0" y="0" width="340" height="90" fill="url(#diagonalHatch)" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="170" y="52" font-family="'Inter', sans-serif" font-size="16" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Time-Scale</text>
+    </g>
+
+    <!-- Offsets Pointer Arrows -->
+    <path d="M 450 105 L 530 105" stroke="#000000" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="540" y="110" font-family="'JetBrains Mono', monospace" font-size="13" fill="#0f172a">axisLabelRightOffset</text>
+
+    <path d="M 170 300 L 170 340 L 260 340" stroke="#000000" stroke-width="1.5"/>
+    <text x="270" y="345" font-family="'JetBrains Mono', monospace" font-size="13" fill="#0f172a">axisLabelBottomOffset</text>
+  </g>
+</svg>
