@@ -130,8 +130,6 @@ Tap-interactive vertical bar charts with rounded top corners, custom color token
 - Left-aligned Y-axis tick labels (`0`, `137`, `273`, `410`).
 - HTML5 Canvas 2D rendering pipeline with `devicePixelRatio` scaling.
 
-![Vertical Bar Chart](assets/images/vertical-bar-chart.svg)
-
 ### Quick Start
 ```jsx
 import { BarChartPrimitive } from './charts/primitives/BarChartPrimitive';
@@ -176,8 +174,6 @@ Tap-interactive horizontal bar charts with top X-axis tick headers, category lab
 - Top X-axis tick header (`0`, `30`, `61`, `91`) with vertical guide lines.
 - Left-aligned category names (`Python`, `JavaScript`, `TypeScript`, etc.) with bold active selection state.
 - Configurable dark or light background container (`#f8fafc` or `#0d0e15`).
-
-![Horizontal Bar Chart](assets/images/horizontal-bar-chart.svg)
 
 ### Quick Start
 ```jsx
@@ -226,7 +222,7 @@ Interactive HTML5 Canvas primitive rendering OHLC candlestick bars, wicks, price
 - Bollinger Bands upper and lower envelope overlays.
 - Interactive crosshair cursor with real-time price badge on Y-axis.
 
-![Candlestick Chart](assets/images/candlestick.svg)
+![Candlestick Chart](assets/images/technical-analysis.png)
 
 ### Quick Start
 ```jsx
@@ -280,8 +276,6 @@ Smooth price trend visualization component with gradient area fills and active t
 - Dynamic min/max Y-axis auto-scaling.
 - Active hover target ripple ring with floating price callout badge.
 
-![Line Chart](assets/images/line-chart.svg)
-
 ### Quick Start
 ```jsx
 import { LineChartPrimitive } from './charts/primitives/LineChartPrimitive';
@@ -316,8 +310,6 @@ Tap-interactive pie and donut chart primitive with popped-out slice highlight an
 - Tap/hover slice highlight popping out segment slightly with color brightness filter.
 - Floating dark label pill badge (`Social 38 (38.0%)`) showing active category, value, and percentage.
 - HTML5 Canvas 2D rendering pipeline with `devicePixelRatio` scaling.
-
-![Pie & Donut Chart](assets/images/pie-donut-chart.svg)
 
 ### Quick Start
 ```jsx
@@ -360,7 +352,7 @@ Synchronized Canvas volume histogram primitive displaying trading volume bars al
 - Max volume scaling relative to current viewport slice.
 - Synchronized crosshairs tracking parent candlestick pane.
 
-![Volume Chart](assets/images/candlestick.svg)
+![Volume Chart](assets/images/technical-analysis.png)
 
 ### Quick Start
 ```jsx
@@ -389,7 +381,7 @@ Canvas primitive rendering the Relative Strength Index (RSI 14-period) oscillato
 - Overbought (70) and oversold (30) threshold guidelines.
 - Dynamic color highlighting when RSI enters overbought or oversold zones.
 
-![RSI Chart](assets/images/candlestick.svg)
+![RSI Chart](assets/images/technical-analysis.png)
 
 ### Quick Start
 ```jsx
@@ -418,7 +410,7 @@ Canvas primitive rendering Moving Average Convergence Divergence (MACD) signal l
 - Color-coded histogram bars (Green above signal, Red below signal).
 - Aligned crosshair cursor with parent price pane.
 
-![MACD Chart](assets/images/candlestick.svg)
+![MACD Chart](assets/images/technical-analysis.png)
 
 ### Quick Start
 ```jsx
@@ -476,8 +468,6 @@ Interactive sector performance heatmap grid displaying equities grouped by secto
 - Color scale intensity reflecting 24-hour return percentage (-5% to +5%).
 - Filter by sector (Technology, Healthcare, Financials, Energy, Consumer Cyclical).
 
-![Market Heatmap](assets/images/heatmap.svg)
-
 ### Quick Start
 ```jsx
 import { MarketHeatmapScreen } from './screens/MarketHeatmap';
@@ -502,8 +492,6 @@ GitHub-style annual trading calendar heatmap displaying daily performance intens
 - Year/month calendar block grid rendering.
 - Tooltip popover displaying date, daily return %, and traded volume.
 - Interactive year navigation controls.
-
-![Calendar Heatmap](assets/images/calendar-heatmap.svg)
 
 ### Quick Start
 ```jsx
@@ -530,8 +518,6 @@ Comprehensive portfolio holdings management screen featuring asset allocation di
 - Position table listing shares, average cost, current price, total value, and unrealized gain/loss.
 - Portfolio value summary cards.
 
-![Portfolio Analytics](assets/images/portfolio.png)
-
 ### Quick Start
 ```jsx
 import { PortfolioScreen } from './screens/Portfolio';
@@ -557,8 +543,6 @@ Custom asset tracking hub with price alert threshold configuration.
 - Target price alert trigger configuration (Alert above / Alert below).
 - Mini sparkline preview charts for tracked stocks.
 
-![Watchlist](assets/images/watchlist.png)
-
 ### Quick Start
 ```jsx
 import { WatchlistScreen } from './screens/Watchlist';
@@ -576,8 +560,6 @@ Overview hub providing global equity index tickers, top market movers, sector mo
 - Marquee ticker tape displaying global indices (S&P 500, Nasdaq, Dow Jones, FTSE 100).
 - Instant ticker search modal supporting keyboard shortcut (<kbd>Cmd</kbd>+<kbd>K</kbd> / <kbd>Ctrl</kbd>+<kbd>K</kbd>).
 - Sector performance overview grid.
-
-![Dashboard](assets/images/dashboard.png)
 
 ### Quick Start
 ```jsx
@@ -597,8 +579,6 @@ Financial news aggregator feed providing market news items, sentiment tags, and 
 - Sentiment indicator tags (Bullish, Bearish, Neutral).
 - Filter news items by ticker symbol.
 
-![News & Events](assets/images/news-events.png)
-
 ### Quick Start
 ```jsx
 import { NewsEventsScreen } from './screens/NewsEvents';
@@ -616,8 +596,6 @@ Interactive testing studio built directly into the application allowing real-tim
 - Benchmark data sizes: 1,000 points, 10,000 points, 50,000 points, and 100,000 points.
 - Real-time execution timing graphs and logs.
 - Trigger benchmarks in-browser or via CLI (`npm run benchmark`).
-
-![Performance Benchmark Studio](assets/images/performance.png)
 
 ### Quick Start
 ```jsx

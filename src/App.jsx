@@ -20,7 +20,8 @@ import { NewsEventsScreen } from './screens/NewsEvents';
 import { PerformanceBenchmarkScreen } from './screens/Performance';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const queryTab = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') : null;
+  const [activeTab, setActiveTab] = useState(queryTab || 'dashboard');
   const [selectedSymbol, setSelectedSymbol] = useState('NVDA');
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [allAssets, setAllAssets] = useState([]);
