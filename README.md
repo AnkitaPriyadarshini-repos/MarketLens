@@ -220,10 +220,6 @@ Interactive HTML5 Canvas primitive rendering OHLC candlestick bars, wicks, price
 - Simple Moving Average (SMA 20) overlay line.
 - Exponential Moving Average (EMA 12) overlay line.
 - Bollinger Bands upper and lower envelope overlays.
-- Interactive crosshair cursor with real-time price badge on Y-axis.
-
-![Candlestick Chart](assets/images/technical-analysis.png)
-
 ### Quick Start
 ```jsx
 import { CandlestickChart } from './charts/CandlestickChart';
@@ -350,10 +346,6 @@ Synchronized Canvas volume histogram primitive displaying trading volume bars al
 ### Features
 - Bullish/bearish color coding (Green for close $\ge$ open, Red for close $<$ open).
 - Max volume scaling relative to current viewport slice.
-- Synchronized crosshairs tracking parent candlestick pane.
-
-![Volume Chart](assets/images/technical-analysis.png)
-
 ### Quick Start
 ```jsx
 import { VolumeChart } from './charts/VolumeChart';
@@ -379,10 +371,6 @@ Canvas primitive rendering the Relative Strength Index (RSI 14-period) oscillato
 ### Features
 - Continuous RSI oscillator line rendering.
 - Overbought (70) and oversold (30) threshold guidelines.
-- Dynamic color highlighting when RSI enters overbought or oversold zones.
-
-![RSI Chart](assets/images/technical-analysis.png)
-
 ### Quick Start
 ```jsx
 import { RSIChart } from './charts/RSIChart';
@@ -408,10 +396,6 @@ Canvas primitive rendering Moving Average Convergence Divergence (MACD) signal l
 ### Features
 - MACD Line, Signal Line, and histogram bars centered around $0.0$ line.
 - Color-coded histogram bars (Green above signal, Red below signal).
-- Aligned crosshair cursor with parent price pane.
-
-![MACD Chart](assets/images/technical-analysis.png)
-
 ### Quick Start
 ```jsx
 import { MACDChart } from './charts/MACDChart';
