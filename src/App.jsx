@@ -9,15 +9,15 @@ import { LensAiAnalystModal } from './components/LensAiAnalystModal';
 import { PriceAlertModal } from './components/PriceAlertModal';
 
 // Screens
-import { DashboardScreen } from './screens/DashboardScreen';
-import { AssetDetailScreen } from './screens/AssetDetailScreen';
-import { TechnicalAnalysisScreen } from './screens/TechnicalAnalysisScreen';
-import { PortfolioScreen } from './screens/PortfolioScreen';
-import { WatchlistScreen } from './screens/WatchlistScreen';
-import { MarketHeatmapScreen } from './screens/MarketHeatmapScreen';
-import { CalendarHeatmapScreen } from './screens/CalendarHeatmapScreen';
-import { NewsEventsScreen } from './screens/NewsEventsScreen';
-import { PerformanceBenchmarkScreen } from './screens/PerformanceBenchmarkScreen';
+import { DashboardScreen } from './screens/Dashboard';
+import { AssetDetailScreen } from './screens/AssetDetail';
+import { TechnicalAnalysisScreen } from './screens/TechnicalAnalysis';
+import { PortfolioScreen } from './screens/Portfolio';
+import { WatchlistScreen } from './screens/Watchlist';
+import { MarketHeatmapScreen } from './screens/MarketHeatmap';
+import { CalendarHeatmapScreen } from './screens/CalendarHeatmap';
+import { NewsEventsScreen } from './screens/NewsEvents';
+import { PerformanceBenchmarkScreen } from './screens/Performance';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('dashboard');

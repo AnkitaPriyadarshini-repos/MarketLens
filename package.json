@@ -31,7 +31,7 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run tests/",
-    "benchmark": "vitest run scripts/benchmark.test.js",
+    "benchmark": "vitest run tests/benchmark.test.js",
     "preview": "vite preview"
   },
   "dependencies": {
