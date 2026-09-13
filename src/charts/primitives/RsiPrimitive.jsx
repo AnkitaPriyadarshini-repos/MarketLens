@@ -44,7 +44,7 @@ export function RsiPrimitive({
 
     const marginTop = 12;
     const marginBottom = 15;
-    const marginRight = 65;
+    const marginRight = 70;
     const marginLeft = 10;
 
     const chartWidth = width - marginLeft - marginRight;
@@ -58,11 +58,11 @@ export function RsiPrimitive({
     const y50 = rsiScale.priceToY(50);
     const y30 = rsiScale.priceToY(30);
 
-    // Overbought (70-100) Translucent Fill
+    // Overbought (70-100) Translucent Red Fill
     ctx.fillStyle = 'rgba(239, 68, 68, 0.08)';
     ctx.fillRect(marginLeft, marginTop, chartWidth, y70 - marginTop);
 
-    // Oversold (0-30) Translucent Fill
+    // Oversold (0-30) Translucent Green Fill
     ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
     ctx.fillRect(marginLeft, y30, chartWidth, marginTop + chartHeight - y30);
 
@@ -98,7 +98,7 @@ export function RsiPrimitive({
     ctx.fillText('50', marginLeft + chartWidth + 6, y50 + 3);
     ctx.fillText('30', marginLeft + chartWidth + 6, y30 + 3);
 
-    // Render RSI Oscillator Polyline
+    // Render RSI Oscillator Line
     ctx.strokeStyle = theme.colors.accentCyan;
     ctx.lineWidth = 1.8;
     ctx.beginPath();
@@ -119,7 +119,7 @@ export function RsiPrimitive({
       const activeItem = data[hoverIndex];
       const x = ChartScale.indexToX(hoverIndex, stepX, marginLeft);
 
-      ctx.strokeStyle = 'rgba(248, 250, 252, 0.6)';
+      ctx.strokeStyle = 'rgba(248, 250, 252, 0.65)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
 
@@ -143,7 +143,7 @@ export function RsiPrimitive({
         ctx.fillRect(marginLeft + chartWidth, y - 8, marginRight - 5, 16);
         ctx.fillStyle = '#ffffff';
         ctx.font = `bold 10px ${theme.fonts.mono}`;
-        ctx.fillText(activeItem.rsi.toFixed(1), marginLeft + chartWidth + 4, y + 4);
+        ctx.fillText(activeItem.rsi.toFixed(1), marginLeft + chartWidth + 5, y + 4);
       }
     }
   }, [data, height, hoverIndex, containerWidth]);
@@ -152,7 +152,7 @@ export function RsiPrimitive({
     if (!containerRef.current || !data.length) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left - 10;
-    const chartWidth = rect.width - 75;
+    const chartWidth = rect.width - 80;
     const stepX = chartWidth / data.length;
     const idx = ChartScale.xToIndex(x, stepX, 0, data.length);
     if (onHoverIndex) onHoverIndex(idx);

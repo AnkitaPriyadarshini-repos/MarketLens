@@ -68,7 +68,7 @@ export function findNearestPointIndex(dataLength: number, mouseX: number, margin
 }
 
 /**
- * Calculate OHLC Candle Geometry (x, yHigh, yLow, yOpen, yClose, bodyY, bodyHeight)
+ * Calculate OHLC Candle Geometry (x, yHigh, yLow, yOpen, yClose, bodyY, bodyHeight, doji handling)
  */
 export function calculateCandleGeometry(
   point: OHLCPoint,
@@ -87,9 +87,12 @@ export function calculateCandleGeometry(
   const yLow = priceScale.priceToY(low);
   const yOpen = priceScale.priceToY(open);
   const yClose = priceScale.priceToY(close);
-  const candleWidth = Math.max(2, stepX * 0.7);
+  
+  // Adaptive candle width based on stepX (75% bar width, bounded between 1.5px and 32px)
+  const candleWidth = Math.max(1.5, Math.min(32, stepX * 0.75));
 
   const bodyY = Math.min(yOpen, yClose);
+  // Ensure minimum 1.5px body height for doji candles
   const bodyHeight = Math.max(1.5, Math.abs(yOpen - yClose));
 
   return {

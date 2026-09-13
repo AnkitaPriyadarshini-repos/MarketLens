@@ -44,7 +44,7 @@ export function MacdPrimitive({
 
     const marginTop = 12;
     const marginBottom = 15;
-    const marginRight = 65;
+    const marginRight = 70;
     const marginLeft = 10;
 
     const chartWidth = width - marginLeft - marginRight;
@@ -77,7 +77,7 @@ export function MacdPrimitive({
     const bound = Math.max(Math.abs(minVal), Math.abs(maxVal), 0.1) * 1.1;
     const macdScale = new ChartScale(-bound, bound, marginTop + chartHeight, marginTop);
     const stepX = chartWidth / data.length;
-    const barWidth = Math.max(2, stepX * 0.7);
+    const barWidth = Math.max(1.5, Math.min(32, stepX * 0.75));
     const zeroY = macdScale.priceToY(0);
 
     // Center Zero Baseline
@@ -144,7 +144,7 @@ export function MacdPrimitive({
       const activeItem = data[hoverIndex];
       const x = ChartScale.indexToX(hoverIndex, stepX, marginLeft);
 
-      ctx.strokeStyle = 'rgba(248, 250, 252, 0.6)';
+      ctx.strokeStyle = 'rgba(248, 250, 252, 0.65)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
 
@@ -168,7 +168,7 @@ export function MacdPrimitive({
         ctx.fillRect(marginLeft + chartWidth, y - 8, marginRight - 5, 16);
         ctx.fillStyle = '#ffffff';
         ctx.font = `bold 10px ${theme.fonts.mono}`;
-        ctx.fillText(activeItem.macdLine.toFixed(2), marginLeft + chartWidth + 4, y + 4);
+        ctx.fillText(activeItem.macdLine.toFixed(2), marginLeft + chartWidth + 5, y + 4);
       }
     }
   }, [data, height, hoverIndex, containerWidth]);
@@ -177,7 +177,7 @@ export function MacdPrimitive({
     if (!containerRef.current || !data.length) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left - 10;
-    const chartWidth = rect.width - 75;
+    const chartWidth = rect.width - 80;
     const stepX = chartWidth / data.length;
     const idx = ChartScale.xToIndex(x, stepX, 0, data.length);
     if (onHoverIndex) onHoverIndex(idx);

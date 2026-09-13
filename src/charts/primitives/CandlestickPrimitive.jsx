@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, forwardRef } from 'react';
 import { theme } from '../../theme/designTokens';
 import { formatCurrency, formatPercent } from '../../utils/formatters';
 import { ChartScale, calculateCandleGeometry } from '../core/ChartScales';
+import { generateNiceTicks, formatAdaptivePrice } from '../core/AxisEngine';
 
 export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
   data = [],
@@ -80,9 +81,9 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    const marginTop = 24;
-    const marginBottom = 28;
-    const marginRight = 65;
+    const marginTop = 20;
+    const marginBottom = 26;
+    const marginRight = 70;
     const marginLeft = 10;
 
     const chartWidth = width - marginLeft - marginRight;
@@ -104,63 +105,62 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       if (d.volume > maxVolume) maxVolume = d.volume;
     });
 
-    // Add 2% padding to price bounds to prevent clipping candles
-    const pricePadding = ((maxPrice - minPrice) || 1) * 0.02;
+    // Add 2.5% padding to price bounds to prevent candles touching plot edges
+    const pricePadding = ((maxPrice - minPrice) || 1) * 0.025;
     minPrice = Math.max(0, minPrice - pricePadding);
     maxPrice += pricePadding;
-    const priceRange = maxPrice - minPrice;
 
     const priceScale = new ChartScale(minPrice, maxPrice, marginTop + chartHeight, marginTop);
     const stepX = chartWidth / visibleData.length;
 
-    // Subtle Horizontal & Vertical Grid Lines
+    // Adaptive Nice Price Ticks Generation
+    const niceTicks = generateNiceTicks(minPrice, maxPrice, 6);
     ctx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
     ctx.lineWidth = 0.5;
     ctx.fillStyle = theme.colors.textMuted;
     ctx.font = `11px ${theme.fonts.mono}`;
     ctx.textAlign = 'left';
 
-    const gridLines = 5;
-    for (let i = 0; i <= gridLines; i++) {
-      const priceVal = minPrice + (priceRange * i) / gridLines;
-      const yPos = priceScale.priceToY(priceVal);
-      
-      ctx.beginPath();
-      ctx.moveTo(marginLeft, yPos);
-      ctx.lineTo(marginLeft + chartWidth, yPos);
-      ctx.stroke();
+    niceTicks.forEach(tickVal => {
+      const yPos = priceScale.priceToY(tickVal);
+      if (yPos >= marginTop && yPos <= marginTop + chartHeight) {
+        ctx.beginPath();
+        ctx.moveTo(marginLeft, yPos);
+        ctx.lineTo(marginLeft + chartWidth, yPos);
+        ctx.stroke();
 
-      ctx.fillText(`$${priceVal.toFixed(2)}`, marginLeft + chartWidth + 6, yPos + 4);
-    }
+        ctx.fillText(formatAdaptivePrice(tickVal), marginLeft + chartWidth + 6, yPos + 4);
+      }
+    });
 
-    // Time Axis Tick Labels at bottom
-    const tickStep = Math.max(1, Math.floor(visibleData.length / 6));
+    // Time Axis Ticks (Intelligent Spacing)
+    const tickStep = Math.max(1, Math.floor(visibleData.length / Math.max(2, Math.floor(chartWidth / 90))));
     ctx.textAlign = 'center';
     visibleData.forEach((d, i) => {
       if (i % tickStep === 0) {
         const xPos = ChartScale.indexToX(i, stepX, marginLeft);
-        ctx.fillText(d.date || `P-${i}`, xPos, height - 8);
+        ctx.fillText(d.date || `P-${i}`, xPos, height - 7);
       }
     });
 
-    // Integrated Volume Bars (bottom 22% of chart)
+    // Volume Bars (integrated bottom 20% of main pane)
     if (showVolume && maxVolume > 0) {
-      const volumeMaxH = chartHeight * 0.22;
+      const volumeMaxH = chartHeight * 0.20;
       visibleData.forEach((d, i) => {
         const x = ChartScale.indexToX(i, stepX, marginLeft);
         const isBull = d.close >= d.open;
         const volH = (d.volume / maxVolume) * volumeMaxH;
         const y = marginTop + chartHeight - volH;
 
-        ctx.fillStyle = isBull ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)';
-        ctx.fillRect(x - (stepX * 0.7) / 2, y, stepX * 0.7, volH);
+        ctx.fillStyle = isBull ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)';
+        ctx.fillRect(x - (stepX * 0.75) / 2, y, stepX * 0.75, volH);
       });
     }
 
-    // Technical Bollinger Bands Envelope Area & Translucent Fill
+    // Bollinger Bands Translucent Fill & Envelope
     if (showBollinger) {
-      // Translucent Band Fill
-      ctx.fillStyle = 'rgba(139, 92, 246, 0.08)';
+      // Area Fill
+      ctx.fillStyle = 'rgba(139, 92, 246, 0.07)';
       ctx.beginPath();
       let startedUpper = false;
       visibleData.forEach((d, i) => {
@@ -183,7 +183,7 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       ctx.closePath();
       ctx.fill();
 
-      // Band Lines
+      // Envelope Lines
       ctx.strokeStyle = theme.colors.accentPurple;
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
@@ -219,15 +219,15 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       const geom = calculateCandleGeometry(d, i, stepX, marginLeft, priceScale);
       const color = geom.isBullish ? theme.colors.gain : theme.colors.loss;
 
-      // Wick line
+      // Wick (1.0px thin line)
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.0;
       ctx.beginPath();
       ctx.moveTo(geom.x, geom.yHigh);
       ctx.lineTo(geom.x, geom.yLow);
       ctx.stroke();
 
-      // Candle body
+      // Body
       ctx.fillStyle = color;
       ctx.fillRect(geom.x - geom.candleWidth / 2, geom.bodyY, geom.candleWidth, geom.bodyHeight);
     });
@@ -235,7 +235,7 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     // Technical SMA 20 Overlay (Cyan line)
     if (showSma) {
       ctx.strokeStyle = theme.colors.accentCyan;
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
       let started = false;
       visibleData.forEach((d, i) => {
@@ -252,7 +252,7 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     // Technical EMA 12 Overlay (Gold line)
     if (showEma) {
       ctx.strokeStyle = theme.colors.accentGold;
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
       let started = false;
       visibleData.forEach((d, i) => {
@@ -269,7 +269,7 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     // Technical VWAP Overlay (Indigo line)
     if (showVwap) {
       ctx.strokeStyle = theme.colors.accentIndigo;
-      ctx.lineWidth = 1.6;
+      ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 2]);
       ctx.beginPath();
       let started = false;
@@ -292,42 +292,42 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       const x = ChartScale.indexToX(activeIdxInVisible, stepX, marginLeft);
       const y = priceScale.priceToY(activeItem.close);
 
-      ctx.strokeStyle = 'rgba(248, 250, 252, 0.6)';
+      ctx.strokeStyle = 'rgba(248, 250, 252, 0.65)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
 
-      // Vertical guide line
+      // Vertical crosshair guide
       ctx.beginPath();
       ctx.moveTo(x, marginTop);
       ctx.lineTo(x, marginTop + chartHeight);
       ctx.stroke();
 
-      // Horizontal guide line
+      // Horizontal crosshair guide
       ctx.beginPath();
       ctx.moveTo(marginLeft, y);
       ctx.lineTo(marginLeft + chartWidth, y);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Price Badge on Y-axis margin
+      // Price Badge on Y-axis
       ctx.fillStyle = theme.colors.accentPrimary;
       ctx.fillRect(marginLeft + chartWidth, y - 10, marginRight - 5, 20);
       ctx.fillStyle = '#ffffff';
       ctx.font = `bold 11px ${theme.fonts.mono}`;
       ctx.textAlign = 'left';
-      ctx.fillText(`$${activeItem.close.toFixed(2)}`, marginLeft + chartWidth + 5, y + 4);
+      ctx.fillText(formatAdaptivePrice(activeItem.close), marginLeft + chartWidth + 5, y + 4);
 
-      // Date Badge on X-axis margin
+      // Date Badge on X-axis
       ctx.fillStyle = theme.colors.bgCardElevated;
-      ctx.fillRect(x - 35, marginTop + chartHeight + 4, 70, 18);
+      ctx.fillRect(x - 35, marginTop + chartHeight + 3, 70, 18);
       ctx.strokeStyle = theme.colors.borderLight;
-      ctx.strokeRect(x - 35, marginTop + chartHeight + 4, 70, 18);
+      ctx.strokeRect(x - 35, marginTop + chartHeight + 3, 70, 18);
       ctx.fillStyle = theme.colors.textPrimary;
       ctx.font = `10px ${theme.fonts.mono}`;
       ctx.textAlign = 'center';
-      ctx.fillText(activeItem.date || '', x, marginTop + chartHeight + 17);
+      ctx.fillText(activeItem.date || '', x, marginTop + chartHeight + 16);
 
-      // Pulse Dot at cursor intersection
+      // Pulse Dot at intersection
       ctx.fillStyle = theme.colors.accentCyan;
       ctx.beginPath();
       ctx.arc(x, y, 4, 0, Math.PI * 2);
@@ -339,7 +339,7 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     if (!containerRef.current || !data.length) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left - 10;
-    const chartWidth = rect.width - 75;
+    const chartWidth = rect.width - 80;
     const visibleCount = Math.max(10, Math.floor(data.length / zoomLevel));
     const startIdx = Math.max(0, Math.min(data.length - visibleCount, Math.floor(panOffset)));
     const stepX = chartWidth / visibleCount;
@@ -356,6 +356,15 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
   };
 
   const activePoint = hoverIndex !== null && data[hoverIndex] ? data[hoverIndex] : null;
+  const prevPoint = hoverIndex !== null && hoverIndex > 0 && data[hoverIndex - 1] ? data[hoverIndex - 1] : null;
+
+  let changeVal = 0;
+  let changePct = 0;
+  if (activePoint) {
+    const basePrice = prevPoint ? prevPoint.close : activePoint.open;
+    changeVal = activePoint.close - basePrice;
+    changePct = basePrice > 0 ? (changeVal / basePrice) * 100 : 0;
+  }
 
   return (
     <div
@@ -368,7 +377,7 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
         <div style={{
           position: 'absolute',
           top: 8,
-          right: 75,
+          right: 80,
           zIndex: 10,
           background: 'rgba(30, 41, 59, 0.85)',
           color: theme.colors.textMuted,
@@ -384,13 +393,14 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
         </div>
       )}
 
+      {/* Terminal-style Floating Tooltip Pill */}
       {activePoint && (
         <div style={{
           position: 'absolute',
           top: 8,
           left: 15,
           zIndex: 10,
-          background: 'rgba(15, 23, 42, 0.92)',
+          background: 'rgba(15, 23, 42, 0.94)',
           backdropFilter: 'blur(10px)',
           padding: '6px 14px',
           borderRadius: theme.radius.md,
@@ -399,20 +409,28 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
           gap: '12px',
           fontSize: '12px',
           fontFamily: theme.fonts.mono,
-          boxShadow: theme.shadows.card
+          boxShadow: theme.shadows.card,
+          flexWrap: 'wrap',
+          alignItems: 'center'
         }}>
           <span style={{ color: theme.colors.textMuted }}>{activePoint.date}</span>
-          <span style={{ color: theme.colors.textSecondary }}>O: <b style={{ color: '#fff' }}>{formatCurrency(activePoint.open)}</b></span>
-          <span style={{ color: theme.colors.textSecondary }}>H: <b style={{ color: '#fff' }}>{formatCurrency(activePoint.high)}</b></span>
-          <span style={{ color: theme.colors.textSecondary }}>L: <b style={{ color: '#fff' }}>{formatCurrency(activePoint.low)}</b></span>
+          <span style={{ color: theme.colors.textSecondary }}>O: <b style={{ color: '#fff' }}>{formatAdaptivePrice(activePoint.open)}</b></span>
+          <span style={{ color: theme.colors.textSecondary }}>H: <b style={{ color: '#fff' }}>{formatAdaptivePrice(activePoint.high)}</b></span>
+          <span style={{ color: theme.colors.textSecondary }}>L: <b style={{ color: '#fff' }}>{formatAdaptivePrice(activePoint.low)}</b></span>
           <span style={{ color: activePoint.close >= activePoint.open ? theme.colors.gain : theme.colors.loss }}>
-            C: <b>{formatCurrency(activePoint.close)}</b>
+            C: <b>{formatAdaptivePrice(activePoint.close)}</b>
+          </span>
+          <span style={{ color: changePct >= 0 ? theme.colors.gain : theme.colors.loss, fontWeight: 700 }}>
+            {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
           </span>
           {activePoint.volume && (
             <span style={{ color: theme.colors.textMuted }}>Vol: {activePoint.volume.toLocaleString()}</span>
           )}
-          {activePoint.sma20 && (
-            <span style={{ color: theme.colors.accentCyan }}>SMA20: ${activePoint.sma20.toFixed(2)}</span>
+          {activePoint.sma20 && showSma && (
+            <span style={{ color: theme.colors.accentCyan }}>SMA20: {formatAdaptivePrice(activePoint.sma20)}</span>
+          )}
+          {activePoint.ema12 && showEma && (
+            <span style={{ color: theme.colors.accentGold }}>EMA12: {formatAdaptivePrice(activePoint.ema12)}</span>
           )}
         </div>
       )}

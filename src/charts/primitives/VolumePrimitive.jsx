@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { theme } from '../../theme/designTokens';
 import { ChartScale } from '../core/ChartScales';
+import { formatCompactVolume } from '../core/AxisEngine';
 
 export function VolumePrimitive({
   data = [],
@@ -42,9 +43,9 @@ export function VolumePrimitive({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    const marginTop = 12;
+    const marginTop = 10;
     const marginBottom = 15;
-    const marginRight = 65;
+    const marginRight = 70;
     const marginLeft = 10;
 
     const chartWidth = width - marginLeft - marginRight;
@@ -55,9 +56,9 @@ export function VolumePrimitive({
     if (maxVolume === 0) maxVolume = 1;
 
     const stepX = chartWidth / data.length;
-    const barWidth = Math.max(2, stepX * 0.75);
+    const barWidth = Math.max(1.5, Math.min(32, stepX * 0.75));
 
-    // Subtle horizontal grid line at max and 50% max volume
+    // Subtle mid-grid volume reference line
     ctx.strokeStyle = 'rgba(51, 65, 85, 0.3)';
     ctx.lineWidth = 0.5;
     ctx.beginPath();
@@ -65,12 +66,12 @@ export function VolumePrimitive({
     ctx.lineTo(marginLeft + chartWidth, marginTop + chartHeight / 2);
     ctx.stroke();
 
-    // Volume Axis Label
+    // Volume Y-Axis Labels
     ctx.fillStyle = theme.colors.textMuted;
     ctx.font = `10px ${theme.fonts.mono}`;
     ctx.textAlign = 'left';
-    ctx.fillText(`${(maxVolume / 1000000).toFixed(1)}M`, marginLeft + chartWidth + 6, marginTop + 10);
-    ctx.fillText(`${(maxVolume / 2000000).toFixed(1)}M`, marginLeft + chartWidth + 6, marginTop + chartHeight / 2 + 3);
+    ctx.fillText(formatCompactVolume(maxVolume), marginLeft + chartWidth + 6, marginTop + 8);
+    ctx.fillText(formatCompactVolume(maxVolume / 2), marginLeft + chartWidth + 6, marginTop + chartHeight / 2 + 3);
 
     // Render Volume Bars
     data.forEach((d, i) => {
@@ -83,14 +84,14 @@ export function VolumePrimitive({
       ctx.fillRect(x - barWidth / 2, y, barWidth, barH);
     });
 
-    // Crosshair & Active Volume Badge
+    // Crosshair & Active Volume Badge on Y Axis
     if (hoverIndex !== null && hoverIndex >= 0 && hoverIndex < data.length) {
       const x = ChartScale.indexToX(hoverIndex, stepX, marginLeft);
       const item = data[hoverIndex];
       const barH = (item.volume / maxVolume) * chartHeight;
       const y = marginTop + chartHeight - barH;
 
-      ctx.strokeStyle = 'rgba(248, 250, 252, 0.6)';
+      ctx.strokeStyle = 'rgba(248, 250, 252, 0.65)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
 
@@ -107,7 +108,7 @@ export function VolumePrimitive({
       ctx.strokeRect(marginLeft + chartWidth, y - 8, marginRight - 5, 16);
       ctx.fillStyle = theme.colors.textPrimary;
       ctx.font = `bold 10px ${theme.fonts.mono}`;
-      ctx.fillText(`${(item.volume / 1000000).toFixed(2)}M`, marginLeft + chartWidth + 4, y + 4);
+      ctx.fillText(formatCompactVolume(item.volume), marginLeft + chartWidth + 5, y + 4);
     }
   }, [data, height, hoverIndex, containerWidth]);
 
@@ -115,7 +116,7 @@ export function VolumePrimitive({
     if (!containerRef.current || !data.length) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left - 10;
-    const chartWidth = rect.width - 75;
+    const chartWidth = rect.width - 80;
     const stepX = chartWidth / data.length;
     const idx = ChartScale.xToIndex(x, stepX, 0, data.length);
     if (onHoverIndex) onHoverIndex(idx);
@@ -148,7 +149,7 @@ export function VolumePrimitive({
         <span>VOLUME</span>
         {activeVol !== null && (
           <span style={{ color: theme.colors.textPrimary, fontWeight: 700 }}>
-            {activeVol.toLocaleString()}
+            {formatCompactVolume(activeVol)} ({activeVol.toLocaleString()})
           </span>
         )}
       </div>
