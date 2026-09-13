@@ -5,14 +5,16 @@ import { lttbDownsample } from '../charts/core/Downsampler';
 import { CandlestickPrimitive } from '../charts/primitives/CandlestickPrimitive';
 
 export function PerformanceBenchmarkScreen() {
-  const [pointCount, setPointCount] = useState(10000); // 10,000 to 100,000 points
+  const [pointCount, setPointCount] = useState(10000); // 1,000, 10,000, 50,000, 100,000
   const [targetDownsample, setTargetDownsample] = useState(500);
   const [fps, setFps] = useState(60);
   const [frameTime, setFrameTime] = useState(16.6);
+  const [processingTime, setProcessingTime] = useState(0);
   const [downsampleLatency, setDownsampleLatency] = useState(0);
+  const [renderTime, setRenderTime] = useState(0);
   const [benchmarkData, setBenchmarkData] = useState([]);
 
-  // FPS Animation Frame loop
+  // FPS Animation Frame loop measuring true browser performance
   const requestRef = useRef();
   const lastTimeRef = useRef(performance.now());
   const frameCountRef = useRef(0);
@@ -24,7 +26,7 @@ export function PerformanceBenchmarkScreen() {
       if (delta >= 1000) {
         const currentFps = Math.round((frameCountRef.current * 1000) / delta);
         setFps(currentFps);
-        setFrameTime(parseFloat((1000 / currentFps).toFixed(2)));
+        setFrameTime(parseFloat((1000 / Math.max(1, currentFps)).toFixed(2)));
         frameCountRef.current = 0;
         lastTimeRef.current = now;
       }
@@ -35,11 +37,11 @@ export function PerformanceBenchmarkScreen() {
     return () => cancelAnimationFrame(requestRef.current);
   }, []);
 
-  // Run Benchmark Test Generator
+  // Run Real Benchmark Tests
   const runBenchmark = () => {
-    const startTime = performance.now();
+    const t0 = performance.now();
     
-    // Generate N raw points
+    // 1. Data Processing Step
     const raw = [];
     let price = 100;
     for (let i = 0; i < pointCount; i++) {
@@ -54,13 +56,17 @@ export function PerformanceBenchmarkScreen() {
         volume: Math.floor(Math.random() * 10000)
       });
     }
-
     const t1 = performance.now();
+    setProcessingTime(parseFloat((t1 - t0).toFixed(2)));
+
+    // 2. LTTB Downsampling Step
     const sampled = lttbDownsample(raw, targetDownsample);
     const t2 = performance.now();
-
     setDownsampleLatency(parseFloat((t2 - t1).toFixed(2)));
+
+    // 3. Render Setup
     setBenchmarkData(sampled);
+    setRenderTime(parseFloat((performance.now() - t2).toFixed(2)));
   };
 
   useEffect(() => {
@@ -82,10 +88,10 @@ export function PerformanceBenchmarkScreen() {
       }}>
         <div>
           <h2 style={{ fontSize: '22px', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Cpu size={20} color={theme.colors.accentCyan} /> Performance & Graphics Benchmark Studio
+            <Cpu size={20} color={theme.colors.accentCyan} /> Real-Time Graphics & Downsampling Benchmark
           </h2>
           <span style={{ fontSize: '12px', color: theme.colors.textMuted }}>
-            Real-Time FPS Monitor & Large-Scale Dataset LTTB Downsampling Engine (10k - 100k Points)
+            Empirical Performance Telemetry (1,000 - 100,000 Raw Points Downsampled via LTTB)
           </span>
         </div>
 
@@ -104,19 +110,19 @@ export function PerformanceBenchmarkScreen() {
             gap: '6px'
           }}
         >
-          <RefreshCw size={14} /> Re-Run Benchmark
+          <RefreshCw size={14} /> Run Benchmark
         </button>
       </div>
 
-      {/* Metrics Telemetry Grid */}
+      {/* Telemetry Metrics Panel */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
         gap: '16px',
         marginBottom: '24px'
       }}>
         <div style={{ background: theme.colors.bgCard, border: `1px solid ${theme.colors.border}`, borderRadius: theme.radius.xl, padding: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: theme.colors.textMuted }}>RENDERING FPS</div>
+          <div style={{ fontSize: '11px', color: theme.colors.textMuted }}>BROWSER FPS</div>
           <div style={{ fontSize: '32px', fontWeight: 800, color: fps >= 55 ? theme.colors.gain : theme.colors.loss, fontFamily: theme.fonts.mono, marginTop: '4px' }}>
             {fps} FPS
           </div>
@@ -130,6 +136,13 @@ export function PerformanceBenchmarkScreen() {
         </div>
 
         <div style={{ background: theme.colors.bgCard, border: `1px solid ${theme.colors.border}`, borderRadius: theme.radius.xl, padding: '16px', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: theme.colors.textMuted }}>DATA GENERATION TIME</div>
+          <div style={{ fontSize: '32px', fontWeight: 800, color: theme.colors.accentPurple, fontFamily: theme.fonts.mono, marginTop: '4px' }}>
+            {processingTime} ms
+          </div>
+        </div>
+
+        <div style={{ background: theme.colors.bgCard, border: `1px solid ${theme.colors.border}`, borderRadius: theme.radius.xl, padding: '16px', textAlign: 'center' }}>
           <div style={{ fontSize: '11px', color: theme.colors.textMuted }}>LTTB DOWNSAMPLE LATENCY</div>
           <div style={{ fontSize: '32px', fontWeight: 800, color: theme.colors.accentGold, fontFamily: theme.fonts.mono, marginTop: '4px' }}>
             {downsampleLatency} ms
@@ -137,9 +150,9 @@ export function PerformanceBenchmarkScreen() {
         </div>
 
         <div style={{ background: theme.colors.bgCard, border: `1px solid ${theme.colors.border}`, borderRadius: theme.radius.xl, padding: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: theme.colors.textMuted }}>VISIBLE POINTS / RAW</div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff', fontFamily: theme.fonts.mono, marginTop: '8px' }}>
-            {benchmarkData.length} / {pointCount.toLocaleString()}
+          <div style={{ fontSize: '11px', color: theme.colors.textMuted }}>RAW / VISIBLE RATIO</div>
+          <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', fontFamily: theme.fonts.mono, marginTop: '8px' }}>
+            {pointCount.toLocaleString()} : {benchmarkData.length}
           </div>
         </div>
       </div>
@@ -158,10 +171,10 @@ export function PerformanceBenchmarkScreen() {
       }}>
         <div>
           <label style={{ fontSize: '12px', fontWeight: 700, color: theme.colors.textSecondary, display: 'block', marginBottom: '6px' }}>
-            Raw Dataset Size: {pointCount.toLocaleString()} Points
+            Raw Dataset Point Count
           </label>
           <div style={{ display: 'flex', gap: '8px' }}>
-            {[10000, 25000, 50000, 100000].map(cnt => (
+            {[1000, 10000, 50000, 100000].map(cnt => (
               <button
                 key={cnt}
                 onClick={() => setPointCount(cnt)}
@@ -176,14 +189,14 @@ export function PerformanceBenchmarkScreen() {
                   cursor: 'pointer'
                 }}
               >
-                {(cnt / 1000)}k
+                {cnt >= 1000 ? `${cnt / 1000}k` : cnt}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Rendered Benchmark Chart */}
+      {/* Rendered Benchmark Viewport */}
       <div style={{
         background: theme.colors.bgCard,
         border: `1px solid ${theme.colors.border}`,
@@ -191,9 +204,9 @@ export function PerformanceBenchmarkScreen() {
         padding: '20px'
       }}>
         <h3 style={{ fontSize: '16px', fontWeight: 800, marginTop: 0, marginBottom: '16px', color: theme.colors.textSecondary }}>
-          Canvas Chart Viewport (Downsampled {pointCount.toLocaleString()} -&gt; {benchmarkData.length} points)
+          Canvas Viewport Output (LTTB Downsampled {pointCount.toLocaleString()} -&gt; {benchmarkData.length} points)
         </h3>
-        <CandlestickPrimitive data={benchmarkData} height={350} showVolume={true} showSma={true} />
+        <CandlestickPrimitive data={benchmarkData} height={350} showVolume={true} showSma={true} demoDataLabel={true} />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  TrendingUp, TrendingDown, Star, Bell, ShieldCheck, 
-  BarChart2, LineChart, Layers, Eye, RefreshCw, Zap, Cpu 
+  TrendingUp, TrendingDown, Star, Bell, ZoomIn, ZoomOut, 
+  RotateCcw, RefreshCw, Zap, ShieldCheck, HelpCircle 
 } from 'lucide-react';
 import { theme } from '../theme/designTokens';
 import { formatCurrency, formatPercent, formatNumber } from '../utils/formatters';
@@ -12,18 +12,21 @@ export function AssetDetailScreen({
   asset = null,
   marketProvider = null,
   onAddToWatchlist = null,
-  onOpenAlerts = null,
-  onOpenTradeModal = null
+  onOpenAlerts = null
 }) {
-  const [chartMode, setChartMode] = useState('area'); // 'area' | 'line' | 'candlestick'
+  const [chartMode, setChartMode] = useState('candlestick'); // 'candlestick' | 'area' | 'line'
   const [timeframe, setTimeframe] = useState('1M');   // '1D'|'1W'|'1M'|'6M'|'1Y'|'ALL'
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Indicator Overlay Toggles
+  // Technical Indicators
   const [showSma, setShowSma] = useState(true);
   const [showBollinger, setShowBollinger] = useState(false);
   const [showVolume, setShowVolume] = useState(true);
+
+  // Zoom & Pan state
+  const [zoomLevel, setZoomLevel] = useState(1.0);
+  const [panOffset, setPanOffset] = useState(0);
 
   useEffect(() => {
     if (!asset || !marketProvider) return;
@@ -33,6 +36,8 @@ export function AssetDetailScreen({
     marketProvider.getHistoricalPrices(asset.symbol, timeframe).then(data => {
       if (isMounted) {
         setChartData(data);
+        setZoomLevel(1.0);
+        setPanOffset(0);
         setLoading(false);
       }
     });
@@ -43,12 +48,16 @@ export function AssetDetailScreen({
   if (!asset) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: theme.colors.textMuted }}>
-        Select an asset from search or market dashboard to view detail analysis.
+        Select an asset to view professional terminal details.
       </div>
     );
   }
 
   const isPositive = asset.changePercent >= 0;
+
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(4.0, prev * 1.25));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(1.0, prev / 1.25));
+  const handleResetZoom = () => { setZoomLevel(1.0); setPanOffset(0); };
 
   return (
     <div style={{ width: '100%', fontFamily: theme.fonts.main, color: theme.colors.textPrimary }}>
@@ -64,7 +73,6 @@ export function AssetDetailScreen({
         border: `1px solid ${theme.colors.border}`,
         marginBottom: '20px'
       }}>
-        {/* Title & Badge */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h1 style={{ fontSize: '26px', fontWeight: 800, margin: 0, fontFamily: theme.fonts.display }}>
@@ -103,7 +111,7 @@ export function AssetDetailScreen({
               <span>{formatCurrency(asset.change, 'USD', 2)} ({formatPercent(asset.changePercent)})</span>
             </div>
             <span style={{ fontSize: '11px', color: theme.colors.gain, background: theme.colors.gainBg, padding: '2px 8px', borderRadius: '4px' }}>
-              MARKET LIVE
+              LIVE FEED
             </span>
           </div>
         </div>
@@ -152,7 +160,7 @@ export function AssetDetailScreen({
         </div>
       </div>
 
-      {/* Main Chart Canvas Container */}
+      {/* Main Chart Terminal Window */}
       <div style={{
         background: theme.colors.bgCard,
         border: `1px solid ${theme.colors.border}`,
@@ -160,7 +168,7 @@ export function AssetDetailScreen({
         padding: '20px',
         marginBottom: '24px'
       }}>
-        {/* Toolbar Controls */}
+        {/* Toolbar & Zoom Controls */}
         <div style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -171,8 +179,23 @@ export function AssetDetailScreen({
           borderBottom: `1px solid ${theme.colors.border}`,
           paddingBottom: '14px'
         }}>
-          {/* Chart Mode Toggles */}
+          {/* Mode Selector */}
           <div style={{ display: 'flex', background: theme.colors.bgDark, padding: '3px', borderRadius: theme.radius.md }}>
+            <button
+              onClick={() => setChartMode('candlestick')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: theme.radius.sm,
+                border: 'none',
+                background: chartMode === 'candlestick' ? theme.colors.bgCardElevated : 'transparent',
+                color: chartMode === 'candlestick' ? '#fff' : theme.colors.textMuted,
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Candlesticks (OHLC)
+            </button>
             <button
               onClick={() => setChartMode('area')}
               style={{
@@ -188,24 +211,9 @@ export function AssetDetailScreen({
             >
               Area
             </button>
-            <button
-              onClick={() => setChartMode('candlestick')}
-              style={{
-                padding: '6px 12px',
-                borderRadius: theme.radius.sm,
-                border: 'none',
-                background: chartMode === 'candlestick' ? theme.colors.bgCardElevated : 'transparent',
-                color: chartMode === 'candlestick' ? '#fff' : theme.colors.textMuted,
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              Candles (OHLC)
-            </button>
           </div>
 
-          {/* Indicators Toggles */}
+          {/* Indicator Toggles */}
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
               onClick={() => setShowSma(!showSma)}
@@ -239,33 +247,52 @@ export function AssetDetailScreen({
             </button>
           </div>
 
-          {/* Timeframe Controls */}
-          <div style={{ display: 'flex', gap: '4px', background: theme.colors.bgDark, padding: '3px', borderRadius: theme.radius.md }}>
-            {['1D', '1W', '1M', '6M', '1Y', 'ALL'].map(tf => (
-              <button
-                key={tf}
-                onClick={() => setTimeframe(tf)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: theme.radius.sm,
-                  border: 'none',
-                  background: timeframe === tf ? theme.colors.accentPrimary : 'transparent',
-                  color: timeframe === tf ? '#fff' : theme.colors.textMuted,
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                {tf}
+          {/* Zoom Buttons & Timeframe Bar */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button onClick={handleZoomIn} title="Zoom In" style={{ padding: '6px 10px', borderRadius: theme.radius.sm, background: theme.colors.bgCardElevated, border: `1px solid ${theme.colors.border}`, color: '#fff', cursor: 'pointer' }}>
+                <ZoomIn size={14} />
               </button>
-            ))}
+              <button onClick={handleZoomOut} title="Zoom Out" style={{ padding: '6px 10px', borderRadius: theme.radius.sm, background: theme.colors.bgCardElevated, border: `1px solid ${theme.colors.border}`, color: '#fff', cursor: 'pointer' }}>
+                <ZoomOut size={14} />
+              </button>
+              <button onClick={handleResetZoom} title="Reset Zoom" style={{ padding: '6px 10px', borderRadius: theme.radius.sm, background: theme.colors.bgCardElevated, border: `1px solid ${theme.colors.border}`, color: '#fff', cursor: 'pointer' }}>
+                <RotateCcw size={14} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '4px', background: theme.colors.bgDark, padding: '3px', borderRadius: theme.radius.md }}>
+              {['1D', '1W', '1M', '6M', '1Y', 'ALL'].map(tf => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: theme.radius.sm,
+                    border: 'none',
+                    background: timeframe === tf ? theme.colors.accentPrimary : 'transparent',
+                    color: timeframe === tf ? '#fff' : theme.colors.textMuted,
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Chart Output Render */}
+        {/* Keyboard Navigation Tip */}
+        <div style={{ fontSize: '11px', color: theme.colors.textMuted, marginBottom: '10px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <HelpCircle size={13} /> Tip: Use Keyboard <kbd style={{ background: theme.colors.bgDark, padding: '1px 5px', borderRadius: '3px' }}>←</kbd> and <kbd style={{ background: theme.colors.bgDark, padding: '1px 5px', borderRadius: '3px' }}>→</kbd> Arrow Keys to scrub through price bars with crosshair.
+        </div>
+
+        {/* Chart Viewport */}
         {loading ? (
           <div style={{ height: 380, display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.colors.textMuted }}>
-            <RefreshCw size={24} className="spin" style={{ marginRight: 8 }} /> Loading Chart Viewport...
+            <RefreshCw size={24} className="spin" style={{ marginRight: 8 }} /> Loading Chart Terminal...
           </div>
         ) : chartMode === 'candlestick' ? (
           <CandlestickPrimitive
@@ -274,6 +301,9 @@ export function AssetDetailScreen({
             showSma={showSma}
             showBollinger={showBollinger}
             showVolume={showVolume}
+            zoomLevel={zoomLevel}
+            panOffset={panOffset}
+            demoDataLabel={true}
           />
         ) : (
           <LineChartPrimitive
@@ -286,13 +316,13 @@ export function AssetDetailScreen({
         )}
       </div>
 
-      {/* Fundamental Metrics & AI Sentiment Grid */}
+      {/* Fundamental Statistics & AI Sentiment */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
         gap: '20px'
       }}>
-        {/* Fundamental Key Statistics */}
+        {/* Statistics Grid */}
         <div style={{
           background: theme.colors.bgCard,
           border: `1px solid ${theme.colors.border}`,
@@ -333,18 +363,10 @@ export function AssetDetailScreen({
               <span style={{ color: theme.colors.textMuted }}>52w Low</span>
               <span style={{ fontWeight: 700, color: theme.colors.loss }}>${asset.low52w}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${theme.colors.border}`, paddingBottom: '6px' }}>
-              <span style={{ color: theme.colors.textMuted }}>Div Yield</span>
-              <span style={{ fontWeight: 700, color: '#fff' }}>{asset.dividendYield}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${theme.colors.border}`, paddingBottom: '6px' }}>
-              <span style={{ color: theme.colors.textMuted }}>RSI (14)</span>
-              <span style={{ fontWeight: 700, color: theme.colors.accentGold }}>{asset.rsi}</span>
-            </div>
           </div>
         </div>
 
-        {/* AI Sentiment & Price Target Range */}
+        {/* AI Sentiment */}
         <div style={{
           background: theme.colors.bgCard,
           border: `1px solid ${theme.colors.border}`,
@@ -374,25 +396,6 @@ export function AssetDetailScreen({
             <p style={{ fontSize: '13px', color: theme.colors.textSecondary, lineHeight: 1.5 }}>
               {asset.description}
             </p>
-          </div>
-
-          {/* Wall St Price Target Range Bar */}
-          <div style={{ marginTop: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontFamily: theme.fonts.mono, marginBottom: '6px' }}>
-              <span style={{ color: theme.colors.loss }}>Bear: ${asset.bearPriceTarget}</span>
-              <span style={{ color: '#fff', fontWeight: 700 }}>Current: ${asset.price}</span>
-              <span style={{ color: theme.colors.gain }}>Bull: ${asset.bullPriceTarget}</span>
-            </div>
-
-            <div style={{ width: '100%', height: '8px', background: theme.colors.bgDark, borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
-              <div style={{
-                position: 'absolute',
-                left: '0%',
-                width: '100%',
-                height: '100%',
-                background: `linear-gradient(90deg, ${theme.colors.loss} 0%, ${theme.colors.accentGold} 50%, ${theme.colors.gain} 100%)`
-              }} />
-            </div>
           </div>
         </div>
       </div>
