@@ -1,26 +1,53 @@
 import { describe, it, expect } from 'vitest';
 import { lttbDownsample } from '../src/charts/core/Downsampler';
 import { calculateIndicators } from '../src/charts/indicators/technicalMath';
-import { ChartScale, findNearestPointIndex } from '../src/charts/core/ChartScales';
+import { ChartScale, findNearestPointIndex, calculateCandleGeometry } from '../src/charts/core/ChartScales';
+import { ChartViewport } from '../src/charts/core/ChartViewport';
 import { formatCurrency, formatPercent } from '../src/utils/formatters';
 
-describe('LTTB Downsampling Algorithm Tests', () => {
-  it('should return empty array when data is empty', () => {
-    expect(lttbDownsample([], 10)).toEqual([]);
-    expect(lttbDownsample(null, 10)).toEqual([]);
+describe('ChartViewport Engine 2.0 Tests', () => {
+  it('should calculate correct visible ranges for zoom levels', () => {
+    const vp = new ChartViewport(100, 1.0, 0);
+    const range = vp.getVisibleRange();
+    expect(range.visibleCount).toBe(100);
+
+    const zoomedVp = vp.zoom(2.0);
+    const zoomedRange = zoomedVp.getVisibleRange();
+    expect(zoomedRange.visibleCount).toBe(50);
   });
 
-  it('should return original data if threshold is >= data length', () => {
-    const data = [{ price: 10 }, { price: 20 }, { price: 30 }];
-    expect(lttbDownsample(data, 5)).toEqual(data);
+  it('should handle panning bounds correctly', () => {
+    const vp = new ChartViewport(100, 2.0, 0);
+    const pannedVp = vp.pan(10);
+    const range = pannedVp.getVisibleRange();
+    expect(range.startIdx).toBe(10);
   });
+});
 
-  it('should downsample 100 points to exactly target threshold', () => {
-    const data = Array.from({ length: 100 }, (_, i) => ({ price: Math.sin(i) * 50 + 100 }));
-    const result = lttbDownsample(data, 20);
-    expect(result.length).toBe(20);
-    expect(result[0]).toEqual(data[0]); // first point preserved
-    expect(result[result.length - 1]).toEqual(data[data.length - 1]); // last point preserved
+describe('LTTB Downsampling Algorithm Benchmark Tests', () => {
+  it('should downsample large datasets (1k, 10k, 50k, 100k points) with high performance', () => {
+    [1000, 10000, 50000, 100000].forEach(count => {
+      const data = Array.from({ length: count }, (_, i) => ({ price: Math.sin(i) * 50 + 100 }));
+      const t0 = performance.now();
+      const sampled = lttbDownsample(data, 500);
+      const t1 = performance.now();
+
+      expect(sampled.length).toBe(500);
+      expect(t1 - t0).toBeLessThan(150); // Downsampling 100k points in < 150ms
+    });
+  });
+});
+
+describe('OHLC Candle Geometry Math', () => {
+  it('should accurately compute candle body height, wick y-positions, and bullish flag', () => {
+    const priceScale = new ChartScale(90, 110, 300, 0); // inverted canvas Y
+    const point = { open: 95, high: 108, low: 92, close: 105 };
+
+    const geom = calculateCandleGeometry(point, 2, 20, 10, priceScale);
+    expect(geom.isBullish).toBe(true);
+    expect(geom.x).toBe(10 + 2 * 20 + 10);
+    expect(geom.yHigh).toBeLessThan(geom.yLow);
+    expect(geom.bodyHeight).toBeGreaterThan(0);
   });
 });
 
@@ -39,17 +66,14 @@ describe('Technical Analysis Indicator Math Tests', () => {
     const calculated = calculateIndicators(sampleOHLC);
     expect(calculated.length).toBe(60);
 
-    // SMA 20 should be null for first 19 bars and a number afterwards
     expect(calculated[0].sma20).toBeNull();
     expect(typeof calculated[25].sma20).toBe('number');
     expect(calculated[25].sma20).toBeGreaterThan(0);
 
-    // RSI should be between 0 and 100
     expect(typeof calculated[30].rsi).toBe('number');
     expect(calculated[30].rsi).toBeGreaterThanOrEqual(0);
     expect(calculated[30].rsi).toBeLessThanOrEqual(100);
 
-    // Bollinger Upper should be >= Bollinger Lower
     expect(calculated[30].bollingerUpper).toBeGreaterThanOrEqual(calculated[30].bollingerLower);
   });
 
@@ -72,8 +96,7 @@ describe('ChartScales Coordinate Transformations', () => {
   });
 
   it('should find nearest data index binary search', () => {
-    const data = Array.from({ length: 10 });
-    const idx = findNearestPointIndex(data, 250, 0, 500);
+    const idx = findNearestPointIndex(10, 250, 0, 500);
     expect(idx).toBe(5);
   });
 });

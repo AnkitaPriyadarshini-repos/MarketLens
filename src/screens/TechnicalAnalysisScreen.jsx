@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, Cell 
+  ResponsiveContainer, AreaChart, Area, YAxis, BarChart, Bar, Cell 
 } from 'recharts';
-import { Sliders, Eye, RefreshCw, BarChart2, Layers, ShieldCheck } from 'lucide-react';
+import { Sliders, RefreshCw, Layers } from 'lucide-react';
 import { theme } from '../theme/designTokens';
-import { formatCurrency, formatPercent } from '../utils/formatters';
+import { formatCurrency } from '../utils/formatters';
 import { CandlestickPrimitive } from '../charts/primitives/CandlestickPrimitive';
+import { VolumePrimitive } from '../charts/primitives/VolumePrimitive';
 
 export function TechnicalAnalysisScreen({
   asset = null,
@@ -24,11 +25,10 @@ export function TechnicalAnalysisScreen({
     bollinger: false,
     volume: true,
     rsi: true,
-    macd: true,
-    stochastic: false,
-    obv: false
+    macd: true
   });
 
+  // Shared Hover Cursor State across all panes
   const [hoverIndex, setHoverIndex] = useState(null);
 
   useEffect(() => {
@@ -39,6 +39,7 @@ export function TechnicalAnalysisScreen({
     marketProvider.getHistoricalPrices(symbol, timeframe).then(chartData => {
       if (isMounted) {
         setData(chartData);
+        setHoverIndex(null);
         setLoading(false);
       }
     });
@@ -50,11 +51,11 @@ export function TechnicalAnalysisScreen({
     setIndicators(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const currentHoverPoint = hoverIndex !== null && data[hoverIndex] ? data[hoverIndex] : null;
+  const activeHoverPoint = hoverIndex !== null && data[hoverIndex] ? data[hoverIndex] : null;
 
   return (
     <div style={{ width: '100%', fontFamily: theme.fonts.main, color: theme.colors.textPrimary }}>
-      {/* Top Controls Header */}
+      {/* Controls Header */}
       <div style={{
         background: theme.colors.bgCard,
         border: `1px solid ${theme.colors.border}`,
@@ -69,25 +70,22 @@ export function TechnicalAnalysisScreen({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, fontFamily: theme.fonts.display }}>
-            Technical Studio: {symbol}
+            Synchronized Multi-Pane Technical Studio: {symbol}
           </h2>
           <span style={{ fontSize: '12px', color: theme.colors.textMuted }}>
             {data.length} Bars Calculated
           </span>
         </div>
 
-        {/* Indicator Toggle Buttons Bar */}
+        {/* Indicators Bar */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           {[
             { id: 'sma20', label: 'SMA 20', color: theme.colors.accentCyan },
             { id: 'ema12', label: 'EMA 12', color: theme.colors.accentGold },
-            { id: 'vwap', label: 'VWAP', color: theme.colors.accentPurple },
             { id: 'bollinger', label: 'Bollinger', color: '#ec4899' },
-            { id: 'volume', label: 'Volume', color: '#64748b' },
-            { id: 'rsi', label: 'RSI (14)', color: theme.colors.accentGold },
-            { id: 'macd', label: 'MACD (12,26,9)', color: theme.colors.accentCyan },
-            { id: 'stochastic', label: 'Stochastic', color: theme.colors.gain },
-            { id: 'obv', label: 'OBV', color: theme.colors.accentPurple }
+            { id: 'volume', label: 'Volume Pane', color: '#64748b' },
+            { id: 'rsi', label: 'RSI Pane', color: theme.colors.accentGold },
+            { id: 'macd', label: 'MACD Pane', color: theme.colors.accentCyan }
           ].map(ind => (
             <button
               key={ind.id}
@@ -109,7 +107,7 @@ export function TechnicalAnalysisScreen({
         </div>
       </div>
 
-      {/* Synchronized Multi-Pane Technical Environment */}
+      {/* Multi-Pane Synchronized Container */}
       <div style={{
         background: theme.colors.bgCard,
         border: `1px solid ${theme.colors.border}`,
@@ -121,42 +119,57 @@ export function TechnicalAnalysisScreen({
       }}>
         {loading ? (
           <div style={{ height: 450, display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.colors.textMuted }}>
-            <RefreshCw size={24} className="spin" style={{ marginRight: 8 }} /> Computing Technical Indicators...
+            <RefreshCw size={24} className="spin" style={{ marginRight: 8 }} /> Computing Technical Viewports...
           </div>
         ) : (
           <>
-            {/* Pane 1: Main Price & Overlay Canvas */}
+            {/* PANE 1: Price Action */}
             <div>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '6px' }}>
-                PANE 1: PRICE ACTION & OVERLAYS
+              <div style={{ fontSize: '11px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '6px' }}>
+                PANE 1: PRICE ACTION & TECHNICAL OVERLAYS
               </div>
               <CandlestickPrimitive
                 data={data}
-                height={320}
+                height={280}
                 showSma={indicators.sma20}
                 showBollinger={indicators.bollinger}
                 showVolume={false}
-                onHoverPoint={(pt) => {
-                  if (pt) {
-                    const idx = data.findIndex(d => d.date === pt.date);
-                    setHoverIndex(idx);
-                  } else {
-                    setHoverIndex(null);
-                  }
-                }}
+                externalHoverIndex={hoverIndex}
+                onHoverPoint={(pt, idx) => setHoverIndex(idx)}
+                demoDataLabel={true}
               />
             </div>
 
-            {/* Pane 2: RSI Oscillator Pane */}
-            {indicators.rsi && (
-              <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '12px' }}>
+            {/* PANE 2: Synchronized Volume Histogram */}
+            {indicators.volume && (
+              <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '4px' }}>
-                  <span>PANE 2: RSI (14) OSCILLATOR</span>
+                  <span>PANE 2: VOLUME HISTOGRAM</span>
+                  {activeHoverPoint && (
+                    <span style={{ color: theme.colors.textMuted, fontFamily: theme.fonts.mono }}>
+                      Vol: {activeHoverPoint.volume.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                <VolumePrimitive
+                  data={data}
+                  height={80}
+                  hoverIndex={hoverIndex}
+                  onHoverIndex={setHoverIndex}
+                />
+              </div>
+            )}
+
+            {/* PANE 3: Synchronized RSI Oscillator */}
+            {indicators.rsi && (
+              <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '4px' }}>
+                  <span>PANE 3: RSI (14) OSCILLATOR</span>
                   <span style={{ color: theme.colors.accentGold, fontFamily: theme.fonts.mono }}>
-                    Current: {currentHoverPoint ? currentHoverPoint.rsi : data[data.length - 1]?.rsi}
+                    RSI: {activeHoverPoint ? activeHoverPoint.rsi : data[data.length - 1]?.rsi}
                   </span>
                 </div>
-                <div style={{ height: 100, width: '100%' }}>
+                <div style={{ height: 90, width: '100%' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={data} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                       <YAxis domain={[0, 100]} ticks={[30, 50, 70]} axisLine={false} tickLine={false} tick={{ fill: theme.colors.textMuted, fontSize: 10 }} orientation="right" />
@@ -167,16 +180,16 @@ export function TechnicalAnalysisScreen({
               </div>
             )}
 
-            {/* Pane 3: MACD Indicator Pane */}
+            {/* PANE 4: Synchronized MACD Histogram */}
             {indicators.macd && (
-              <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '12px' }}>
+              <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '4px' }}>
-                  <span>PANE 3: MACD (12, 26, 9) HISTOGRAM & SIGNAL</span>
+                  <span>PANE 4: MACD (12, 26, 9) HISTOGRAM</span>
                   <span style={{ color: theme.colors.accentCyan, fontFamily: theme.fonts.mono }}>
-                    MACD: {currentHoverPoint ? currentHoverPoint.macdLine : data[data.length - 1]?.macdLine} | Signal: {currentHoverPoint ? currentHoverPoint.macdSignal : data[data.length - 1]?.macdSignal}
+                    MACD: {activeHoverPoint ? activeHoverPoint.macdLine : data[data.length - 1]?.macdLine} | Signal: {activeHoverPoint ? activeHoverPoint.macdSignal : data[data.length - 1]?.macdSignal}
                   </span>
                 </div>
-                <div style={{ height: 100, width: '100%' }}>
+                <div style={{ height: 90, width: '100%' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.colors.textMuted, fontSize: 10 }} orientation="right" />

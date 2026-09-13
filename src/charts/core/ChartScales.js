@@ -1,6 +1,6 @@
 /**
- * ChartScales Utility Module
- * Transforms domain values (time/index, price) into pixel coordinates
+ * ChartScales Module - Visualization Engine 2.0
+ * Transforms domain values (index/time, price) into pixel coordinates
  */
 
 export class ChartScale {
@@ -14,6 +14,7 @@ export class ChartScale {
   }
 
   toPixel(val) {
+    if (val === null || val === undefined || isNaN(val)) return this.rangeMin;
     return this.rangeMin + ((val - this.domainMin) / this.domainSpan) * this.rangeSpan;
   }
 
@@ -23,11 +24,38 @@ export class ChartScale {
 }
 
 /**
- * Binary search for nearest data point index
+ * Binary search for nearest data point index given mouse X coordinate
  */
-export function findNearestPointIndex(data, mouseX, marginLeft, chartWidth) {
-  if (!data || data.length === 0) return -1;
-  const stepX = chartWidth / data.length;
+export function findNearestPointIndex(dataLength, mouseX, marginLeft, chartWidth) {
+  if (!dataLength || dataLength <= 0 || chartWidth <= 0) return -1;
+  const stepX = chartWidth / dataLength;
   const rawIdx = Math.floor((mouseX - marginLeft) / stepX);
-  return Math.max(0, Math.min(data.length - 1, rawIdx));
+  return Math.max(0, Math.min(dataLength - 1, rawIdx));
+}
+
+/**
+ * Calculate OHLC Candle Geometry (x, yHigh, yLow, yOpen, yClose, bodyHeight)
+ */
+export function calculateCandleGeometry(point, index, stepX, marginLeft, priceScale) {
+  const x = marginLeft + index * stepX + stepX / 2;
+  const yHigh = priceScale.toPixel(point.high);
+  const yLow = priceScale.toPixel(point.low);
+  const yOpen = priceScale.toPixel(point.open);
+  const yClose = priceScale.toPixel(point.close);
+  const candleWidth = Math.max(2, stepX * 0.7);
+
+  const bodyY = Math.min(yOpen, yClose);
+  const bodyHeight = Math.max(1.5, Math.abs(yOpen - yClose));
+
+  return {
+    x,
+    yHigh,
+    yLow,
+    yOpen,
+    yClose,
+    bodyY,
+    bodyHeight,
+    candleWidth,
+    isBullish: point.close >= point.open
+  };
 }
