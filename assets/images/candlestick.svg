@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="100%">
+  <rect width="800" height="450" fill="#0d0d11" rx="16"/>
+  <rect x="2" y="2" width="796" height="446" fill="none" stroke="#1e2330" stroke-width="2" rx="14"/>
+
+  <!-- Y Axis Price Ticks -->
+  <g font-family="'JetBrains Mono', monospace" font-size="13" fill="#64748b" text-anchor="start">
+    <line x1="40" y1="70" x2="710" y2="70" stroke="rgba(51, 65, 85, 0.25)" stroke-width="1"/>
+    <text x="720" y="75">$196.00</text>
+
+    <line x1="40" y1="140" x2="710" y2="140" stroke="rgba(51, 65, 85, 0.25)" stroke-width="1"/>
+    <text x="720" y="145">$194.00</text>
+
+    <line x1="40" y1="210" x2="710" y2="210" stroke="rgba(51, 65, 85, 0.25)" stroke-width="1"/>
+    <text x="720" y="215">$192.00</text>
+
+    <line x1="40" y1="280" x2="710" y2="280" stroke="rgba(51, 65, 85, 0.25)" stroke-width="1"/>
+    <text x="720" y="285">$190.00</text>
+
+    <line x1="40" y1="350" x2="710" y2="350" stroke="rgba(51, 65, 85, 0.25)" stroke-width="1"/>
+    <text x="720" y="355">$188.00</text>
+  </g>
+
+  <!-- SMA 20 Overlay (Blue) -->
+  <path d="M 60 290 Q 200 210, 350 170 T 550 190 T 700 150" fill="none" stroke="#3b82f6" stroke-width="2"/>
+
+  <!-- Bollinger Bands (Purple Translucent) -->
+  <path d="M 60 260 Q 200 180, 350 130 T 550 150 T 700 110" fill="none" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4,4"/>
+  <path d="M 60 320 Q 200 240, 350 210 T 550 230 T 700 190" fill="none" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <!-- Candlesticks -->
+  <!-- 1. Red -->
+  <line x1="70" y1="270" x2="70" y2="330" stroke="#ef4444" stroke-width="1.5"/>
+  <rect x="62" y="280" width="16" height="40" fill="#ef4444"/>
+
+  <!-- 2. Green -->
+  <line x1="120" y1="240" x2="120" y2="300" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="112" y="250" width="16" height="40" fill="#10b981"/>
+
+  <!-- 3. Green -->
+  <line x1="170" y1="200" x2="170" y2="270" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="162" y="210" width="16" height="50" fill="#10b981"/>
+
+  <!-- 4. Green -->
+  <line x1="220" y1="170" x2="220" y2="230" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="212" y="180" width="16" height="40" fill="#10b981"/>
+
+  <!-- 5. Red -->
+  <line x1="270" y1="160" x2="270" y2="220" stroke="#ef4444" stroke-width="1.5"/>
+  <rect x="262" y="170" width="16" height="35" fill="#ef4444"/>
+
+  <!-- 6. Green -->
+  <line x1="320" y1="130" x2="320" y2="190" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="312" y="140" width="16" height="40" fill="#10b981"/>
+
+  <!-- 7. Green -->
+  <line x1="370" y1="110" x2="370" y2="170" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="362" y="120" width="16" height="40" fill="#10b981"/>
+
+  <!-- 8. Red -->
+  <line x1="420" y1="130" x2="420" y2="210" stroke="#ef4444" stroke-width="1.5"/>
+  <rect x="412" y="140" width="16" height="60" fill="#ef4444"/>
+
+  <!-- 9. Red -->
+  <line x1="470" y1="180" x2="470" y2="260" stroke="#ef4444" stroke-width="1.5"/>
+  <rect x="462" y="190" width="16" height="60" fill="#ef4444"/>
+
+  <!-- 10. Green -->
+  <line x1="520" y1="210" x2="520" y2="280" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="512" y="220" width="16" height="50" fill="#10b981"/>
+
+  <!-- 11. Green (ACTIVE HIGHLIGHT) -->
+  <line x1="570" y1="160" x2="570" y2="240" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="562" y="170" width="16" height="50" fill="#10b981"/>
+
+  <!-- 12. Green -->
+  <line x1="620" y1="130" x2="620" y2="200" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="612" y="140" width="16" height="50" fill="#10b981"/>
+
+  <!-- Crosshair & Price Badge (192.45) -->
+  <line x1="570" y1="40" x2="570" y2="390" stroke="rgba(248, 250, 252, 0.6)" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="40" y1="195" x2="710" y2="195" stroke="rgba(248, 250, 252, 0.6)" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <rect x="710" y="182" width="75" height="26" rx="4" fill="#10b981"/>
+  <text x="747" y="199" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">192.45</text>
+</svg>

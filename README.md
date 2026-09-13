@@ -8,13 +8,15 @@
 
 A high-performance financial analytics and visualization platform for interactive market data, technical analysis, portfolio intelligence, and custom chart rendering.
 
-![MarketLens Technical Analysis Studio](assets/images/technical-analysis.png)
+![MarketLens Technical Analysis Studio](assets/images/technical-analysis.svg)
 *MarketLens 4-pane synchronized technical analysis studio featuring Candlestick OHLC, Volume, RSI oscillator, and MACD indicators with unified crosshairs.*
 
 ---
 
 ## Charts Available
 
+- [Vertical Bar Chart](#vertical-bar-chart)
+- [Horizontal Bar Chart](#horizontal-bar-chart)
 - [Candlestick Chart](#candlestick-chart)
 - [Line Chart](#line-chart)
 - [Volume Chart](#volume-chart)
@@ -28,6 +30,7 @@ A high-performance financial analytics and visualization platform for interactiv
 - [Dashboard](#dashboard)
 - [News & Events](#news--events)
 - [Performance Benchmark Studio](#performance-benchmark-studio)
+
 
 ---
 
@@ -116,6 +119,101 @@ Market data API feeds frequently contain missing values, nulls, inverted high/lo
 
 ---
 
+## Vertical Bar Chart
+
+Tap-interactive vertical bar charts with rounded top corners, custom color tokens, and floating active value pill badge.
+
+### Features
+- Tap and hover interaction highlighting active bar in vibrant orange (`#ff7e5f`).
+- Floating value pill badge (`275`) displaying exact value directly above active bar.
+- Rounded top bar geometry with configurable radius.
+- Left-aligned Y-axis tick labels (`0`, `137`, `273`, `410`).
+- HTML5 Canvas 2D rendering pipeline with `devicePixelRatio` scaling.
+
+![Vertical Bar Chart](assets/images/vertical-bar-chart.svg)
+
+### Quick Start
+```jsx
+import { BarChartPrimitive } from './charts/primitives/BarChartPrimitive';
+
+const data = [
+  { name: "Mon", value: 120 },
+  { name: "Tue", value: 180 },
+  { name: "Wed", value: 134 },
+  { name: "Thu", value: 410 },
+  { name: "Fri", value: 275 },
+  { name: "Sun", value: 380 }
+];
+
+<BarChartPrimitive
+  data={data}
+  height={320}
+  color="#9672f8"
+  activeColor="#ff7e5f"
+  dataKey="value"
+  nameKey="name"
+/>
+```
+
+### API Reference
+
+| Prop | Type | Default | Description |
+|:---|:---|:---|:---|
+| `data` | `BarDataItem[]` | `[]` | Data point array containing categories and numeric values |
+| `height` | `number` | `300` | Canvas element height in pixels |
+| `color` | `string` | `"#9672f8"` | Default bar color |
+| `activeColor` | `string` | `"#ff7e5f"` | Active highlighted bar and pill badge stroke color |
+| `horizontal` | `boolean` | `false` | Sets layout mode (`false` for vertical, `true` for horizontal) |
+
+---
+
+## Horizontal Bar Chart
+
+Tap-interactive horizontal bar charts with top X-axis tick headers, category label styling, and rounded right bar ends.
+
+### Features
+- Horizontal bar layout with rounded right bar ends.
+- Top X-axis tick header (`0`, `30`, `61`, `91`) with vertical guide lines.
+- Left-aligned category names (`Python`, `JavaScript`, `TypeScript`, etc.) with bold active selection state.
+- Configurable dark or light background container (`#f8fafc` or `#0d0e15`).
+
+![Horizontal Bar Chart](assets/images/horizontal-bar-chart.svg)
+
+### Quick Start
+```jsx
+import { BarChartPrimitive } from './charts/primitives/BarChartPrimitive';
+
+const langData = [
+  { name: "Python", value: 91 },
+  { name: "JavaScript", value: 82 },
+  { name: "TypeScript", value: 72 },
+  { name: "Rust", value: 52 },
+  { name: "Go", value: 58 },
+  { name: "Swift", value: 42 },
+  { name: "Kotlin", value: 46 }
+];
+
+<BarChartPrimitive
+  data={langData}
+  height={340}
+  horizontal={true}
+  color="#f59e0b"
+  bgColor="#f8fafc"
+/>
+```
+
+### API Reference
+
+| Prop | Type | Default | Description |
+|:---|:---|:---|:---|
+| `data` | `BarDataItem[]` | `[]` | Data array containing category names and values |
+| `height` | `number` | `300` | Chart container height in pixels |
+| `horizontal` | `boolean` | `true` | Enables horizontal layout mode |
+| `color` | `string` | `"#f59e0b"` | Horizontal bar stroke/fill color |
+| `bgColor` | `string` | `"#0d0e15"` | Container background color (`"#f8fafc"` for light mode) |
+
+---
+
 ## Candlestick Chart
 
 Interactive HTML5 Canvas primitive rendering OHLC candlestick bars, wicks, price grid lines, and overlay indicators.
@@ -128,7 +226,7 @@ Interactive HTML5 Canvas primitive rendering OHLC candlestick bars, wicks, price
 - Bollinger Bands upper and lower envelope overlays.
 - Interactive crosshair cursor with real-time price badge on Y-axis.
 
-![Candlestick Chart](assets/images/candlestick.png)
+![Candlestick Chart](assets/images/candlestick.svg)
 
 ### Quick Start
 ```jsx
