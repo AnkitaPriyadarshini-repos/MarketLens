@@ -2,7 +2,30 @@
   "name": "marketlens",
   "private": true,
   "version": "1.0.0",
+  "description": "High-performance financial analytics and visualization platform built around a custom interactive chart engine.",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AnkitaPriyadarshini-repos/MarketLens.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AnkitaPriyadarshini-repos/MarketLens/issues"
+  },
+  "homepage": "https://github.com/AnkitaPriyadarshini-repos/MarketLens#readme",
+  "keywords": [
+    "react",
+    "typescript",
+    "financial-analytics",
+    "financial-visualization",
+    "technical-analysis",
+    "candlestick",
+    "data-visualization",
+    "canvas",
+    "performance",
+    "chart-engine",
+    "market-data"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
