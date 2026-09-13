@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, RefreshCw, Layers } from 'lucide-react';
+import {
+  Sliders, RefreshCw, Layers, Search, Plus, Settings,
+  Maximize2, MousePointer, Crosshair, TrendingUp, Type, Grid, Move,
+  Lock, EyeOff, Trash2, BarChart2, Activity
+} from 'lucide-react';
 import { theme } from '../../theme/designTokens';
 import { formatCurrency } from '../../utils/formatters';
 import { CandlestickPrimitive } from '../../charts/primitives/CandlestickPrimitive';
@@ -11,17 +15,18 @@ export function TechnicalAnalysisScreen({
   asset = null,
   marketProvider = null
 }) {
-  const [symbol, setSymbol] = useState(asset?.symbol || 'NVDA');
-  const [timeframe, setTimeframe] = useState('1M');
+  const [symbol, setSymbol] = useState(asset?.symbol || 'AAPL');
+  const [timeframe, setTimeframe] = useState('15m');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeTool, setActiveTool] = useState('crosshair');
 
   // Active Technical Indicator Toggles
   const [indicators, setIndicators] = useState({
     sma20: true,
     ema12: true,
     vwap: false,
-    bollinger: false,
+    bollinger: true,
     volume: true,
     rsi: true,
     macd: true
@@ -50,50 +55,88 @@ export function TechnicalAnalysisScreen({
     setIndicators(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const activeHoverPoint = hoverIndex !== null && data[hoverIndex] ? data[hoverIndex] : null;
+  const activeHoverPoint = hoverIndex !== null && data[hoverIndex] ? data[hoverIndex] : (data[data.length - 1] || null);
+
+  const currentPrice = activeHoverPoint ? activeHoverPoint.close : (asset?.price || 192.45);
+  const prevPrice = data.length > 1 ? data[data.length - 2].close : (currentPrice * 0.995);
+  const priceChange = currentPrice - prevPrice;
+  const priceChangePct = prevPrice > 0 ? (priceChange / prevPrice) * 100 : 0.46;
 
   return (
-    <div style={{ width: '100%', fontFamily: theme.fonts.main, color: theme.colors.textPrimary }}>
-      {/* Controls Header */}
+    <div style={{ width: '100%', fontFamily: theme.fonts.main, color: theme.colors.textPrimary, background: '#0a0e17', borderRadius: '12px', border: '1px solid #1e2638', overflow: 'hidden' }}>
+      
+      {/* 1. TOP STUDIO HEADER BAR */}
       <div style={{
-        background: theme.colors.bgCard,
-        border: `1px solid ${theme.colors.border}`,
-        borderRadius: theme.radius.xl,
-        padding: '16px 20px',
-        marginBottom: '20px',
+        background: '#111726',
+        borderBottom: '1px solid #1e2638',
+        padding: '8px 16px',
         display: 'flex',
-        flexWrap: 'wrap',
-        justify: 'space-between',
         alignItems: 'center',
-        gap: '16px'
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px'
       }}>
+        {/* Left Section: Brand & Symbol Search */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, fontFamily: theme.fonts.display }}>
-            Technical Studio 2.0: {symbol}
-          </h2>
-          <span style={{ fontSize: '12px', color: theme.colors.textMuted }}>
-            {data.length} Bars Calculated
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: theme.colors.accentPrimary, fontWeight: 800, fontSize: '15px' }}>
+            <BarChart2 size={18} color="#3b82f6" /> MarketLens Studio
+          </div>
+
+          <div style={{ width: '1px', height: '20px', background: '#1e2638' }} />
+
+          {/* Symbol & Price Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#182032', padding: '4px 10px', borderRadius: '6px', border: '1px solid #26334d' }}>
+            <span style={{ fontWeight: 800, fontFamily: theme.fonts.mono, color: '#ffffff' }}>${symbol}</span>
+            <span style={{ fontWeight: 700, fontFamily: theme.fonts.mono, color: priceChangePct >= 0 ? theme.colors.gain : theme.colors.loss }}>
+              {formatCurrency(currentPrice)} ({priceChangePct >= 0 ? '+' : ''}{priceChangePct.toFixed(2)}%)
+            </span>
+            <button style={{ background: 'transparent', border: 'none', color: theme.colors.textMuted, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+              <Plus size={14} />
+            </button>
+          </div>
+
+          {/* Timeframe Selector */}
+          <div style={{ display: 'flex', gap: '2px', background: '#182032', padding: '2px', borderRadius: '6px', border: '1px solid #26334d' }}>
+            {['15m', '1h', '4h', '1D', '1W'].map(tf => (
+              <button
+                key={tf}
+                onClick={() => setTimeframe(tf)}
+                style={{
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  border: 'none',
+                  fontSize: '11px',
+                  fontFamily: theme.fonts.mono,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: timeframe === tf ? theme.colors.accentPrimary : 'transparent',
+                  color: timeframe === tf ? '#ffffff' : theme.colors.textMuted
+                }}
+              >
+                {tf}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Indicators Bar */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        {/* Center/Right Section: Action Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Indicator Toggles */}
           {[
-            { id: 'sma20', label: 'SMA 20', color: theme.colors.accentCyan },
-            { id: 'ema12', label: 'EMA 12', color: theme.colors.accentGold },
-            { id: 'bollinger', label: 'Bollinger', color: '#ec4899' },
-            { id: 'volume', label: 'Volume Pane', color: '#64748b' },
-            { id: 'rsi', label: 'RSI Pane', color: theme.colors.accentGold },
-            { id: 'macd', label: 'MACD Pane', color: theme.colors.accentCyan }
+            { id: 'sma20', label: 'SMA 20', color: '#3b82f6' },
+            { id: 'bollinger', label: 'Bollinger', color: '#8b5cf6' },
+            { id: 'volume', label: 'Volume', color: '#10b981' },
+            { id: 'rsi', label: 'RSI', color: '#06b6d4' },
+            { id: 'macd', label: 'MACD', color: '#f59e0b' }
           ].map(ind => (
             <button
               key={ind.id}
               onClick={() => toggleIndicator(ind.id)}
               style={{
-                padding: '5px 10px',
-                borderRadius: theme.radius.sm,
-                border: indicators[ind.id] ? `1px solid ${ind.color}` : `1px solid ${theme.colors.border}`,
-                background: indicators[ind.id] ? 'rgba(30, 41, 59, 0.9)' : 'transparent',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                border: indicators[ind.id] ? `1px solid ${ind.color}` : '1px solid #26334d',
+                background: indicators[ind.id] ? 'rgba(30, 41, 59, 0.8)' : 'transparent',
                 color: indicators[ind.id] ? ind.color : theme.colors.textMuted,
                 fontSize: '11px',
                 fontWeight: 700,
@@ -103,100 +146,177 @@ export function TechnicalAnalysisScreen({
               {ind.label}
             </button>
           ))}
+
+          <div style={{ width: '1px', height: '20px', background: '#1e2638' }} />
+
+          <button style={{ background: '#182032', border: '1px solid #26334d', color: theme.colors.textSecondary, padding: '5px', borderRadius: '4px', cursor: 'pointer' }} title="Settings">
+            <Settings size={15} />
+          </button>
+          <button style={{ background: '#182032', border: '1px solid #26334d', color: theme.colors.textSecondary, padding: '5px', borderRadius: '4px', cursor: 'pointer' }} title="Full Screen">
+            <Maximize2 size={15} />
+          </button>
         </div>
       </div>
 
-      {/* Multi-Pane Synchronized Custom Canvas Terminal */}
-      <div style={{
-        background: theme.colors.bgCard,
-        border: `1px solid ${theme.colors.border}`,
-        borderRadius: theme.radius.xl,
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px'
-      }}>
-        {loading ? (
-          <div style={{ height: 450, display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.colors.textMuted }}>
-            <RefreshCw size={24} className="spin" style={{ marginRight: 8 }} /> Computing Technical Viewports...
-          </div>
-        ) : (
-          <>
-            {/* PANE 1: Price Action */}
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '6px' }}>
-                PANE 1: PRICE ACTION & OVERLAYS
-              </div>
-              <CandlestickPrimitive
-                data={data}
-                height={280}
-                showSma={indicators.sma20}
-                showBollinger={indicators.bollinger}
-                showVolume={false}
-                externalHoverIndex={hoverIndex}
-                onHoverPoint={(pt, idx) => setHoverIndex(idx)}
-                demoDataLabel={true}
-              />
+      {/* 2. MAIN TERMINAL WORKSPACE (LEFT TOOLBAR + CHART CANVAS PANES) */}
+      <div style={{ display: 'flex', width: '100%', minHeight: '620px', background: '#0d111a' }}>
+        
+        {/* Left Vertical Drawing Toolbar */}
+        <div style={{
+          width: '42px',
+          background: '#111726',
+          borderRight: '1px solid #1e2638',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '8px 0',
+          gap: '12px'
+        }}>
+          {[
+            { id: 'cursor', icon: MousePointer, title: 'Cursor' },
+            { id: 'crosshair', icon: Crosshair, title: 'Crosshair' },
+            { id: 'trendline', icon: TrendingUp, title: 'Trendline' },
+            { id: 'text', icon: Type, title: 'Text Annotation' },
+            { id: 'pitchfork', icon: Grid, title: 'Pitchfork & Channels' },
+            { id: 'pattern', icon: Activity, title: 'Patterns' },
+            { id: 'measure', icon: Move, title: 'Measurement Ruler' },
+            { id: 'lock', icon: Lock, title: 'Lock All Drawings' },
+            { id: 'hide', icon: EyeOff, title: 'Hide Drawings' },
+            { id: 'trash', icon: Trash2, title: 'Clear Chart' }
+          ].map(tool => {
+            const IconComp = tool.icon;
+            const isActive = activeTool === tool.id;
+            return (
+              <button
+                key={tool.id}
+                onClick={() => setActiveTool(tool.id)}
+                title={tool.title}
+                style={{
+                  background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                  border: 'none',
+                  color: isActive ? theme.colors.accentPrimary : theme.colors.textMuted,
+                  padding: '6px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <IconComp size={16} />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Central Panes Area */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {loading ? (
+            <div style={{ height: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.colors.textMuted }}>
+              <RefreshCw size={24} className="spin" style={{ marginRight: 8 }} /> Computing Financial Viewports...
             </div>
-
-            {/* PANE 2: Synchronized Volume Histogram */}
-            {indicators.volume && (
-              <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '4px' }}>
-                  <span>PANE 2: VOLUME HISTOGRAM</span>
-                  {activeHoverPoint && (
-                    <span style={{ color: theme.colors.textMuted, fontFamily: theme.fonts.mono }}>
-                      Vol: {activeHoverPoint.volume.toLocaleString()}
-                    </span>
-                  )}
-                </div>
-                <VolumePrimitive
+          ) : (
+            <>
+              {/* PANE 1: Candlestick Price Action & Overlays */}
+              <div style={{ position: 'relative', borderBottom: '1px solid #1e2638' }}>
+                <CandlestickPrimitive
                   data={data}
-                  height={80}
-                  hoverIndex={hoverIndex}
-                  onHoverIndex={setHoverIndex}
+                  height={300}
+                  showSma={indicators.sma20}
+                  showEma={indicators.ema12}
+                  showBollinger={indicators.bollinger}
+                  showVwap={indicators.vwap}
+                  showVolume={false}
+                  externalHoverIndex={hoverIndex}
+                  onHoverPoint={(pt, idx) => setHoverIndex(idx)}
+                  demoDataLabel={false}
                 />
               </div>
-            )}
 
-            {/* PANE 3: Synchronized Custom Canvas RSI Oscillator */}
-            {indicators.rsi && (
-              <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '4px' }}>
-                  <span>PANE 3: RSI (14) OSCILLATOR</span>
-                  <span style={{ color: theme.colors.accentGold, fontFamily: theme.fonts.mono }}>
-                    RSI: {activeHoverPoint ? activeHoverPoint.rsi : data[data.length - 1]?.rsi}
-                  </span>
+              {/* PANE 2: Synchronized Volume Histogram Pane */}
+              {indicators.volume && (
+                <div style={{ position: 'relative', borderBottom: '1px solid #1e2638' }}>
+                  <VolumePrimitive
+                    data={data}
+                    height={95}
+                    hoverIndex={hoverIndex}
+                    onHoverIndex={setHoverIndex}
+                  />
                 </div>
-                <RsiPrimitive
-                  data={data}
-                  height={90}
-                  hoverIndex={hoverIndex}
-                  onHoverIndex={setHoverIndex}
-                />
-              </div>
-            )}
+              )}
 
-            {/* PANE 4: Synchronized Custom Canvas MACD Histogram */}
-            {indicators.macd && (
-              <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '4px' }}>
-                  <span>PANE 4: MACD (12, 26, 9) HISTOGRAM</span>
-                  <span style={{ color: theme.colors.accentCyan, fontFamily: theme.fonts.mono }}>
-                    MACD: {activeHoverPoint ? activeHoverPoint.macdLine : data[data.length - 1]?.macdLine} | Signal: {activeHoverPoint ? activeHoverPoint.macdSignal : data[data.length - 1]?.macdSignal}
-                  </span>
+              {/* PANE 3: Synchronized RSI (14) Oscillator Pane */}
+              {indicators.rsi && (
+                <div style={{ position: 'relative', borderBottom: '1px solid #1e2638' }}>
+                  <RsiPrimitive
+                    data={data}
+                    height={100}
+                    hoverIndex={hoverIndex}
+                    onHoverIndex={setHoverIndex}
+                  />
                 </div>
-                <MacdPrimitive
-                  data={data}
-                  height={90}
-                  hoverIndex={hoverIndex}
-                  onHoverIndex={setHoverIndex}
-                />
-              </div>
-            )}
-          </>
-        )}
+              )}
+
+              {/* PANE 4: Synchronized MACD (12, 26, 9) Histogram Pane */}
+              {indicators.macd && (
+                <div style={{ position: 'relative' }}>
+                  <MacdPrimitive
+                    data={data}
+                    height={105}
+                    hoverIndex={hoverIndex}
+                    onHoverIndex={setHoverIndex}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* 3. BOTTOM TIME SCALE & TIME RANGE FOOTER BAR */}
+      <div style={{
+        background: '#111726',
+        borderTop: '1px solid #1e2638',
+        padding: '6px 16px',
+        display: 'flex',
+        justify: 'space-between',
+        alignItems: 'center',
+        fontSize: '11px',
+        fontFamily: theme.fonts.mono,
+        color: theme.colors.textMuted
+      }}>
+        {/* Quick Range Selection */}
+        <div style={{ display: 'flex', gap: '4px' }}>
+          {['15m', '5D', '1M', '3M', '1Y', '5Y', 'All'].map(range => (
+            <button
+              key={range}
+              onClick={() => setTimeframe(range)}
+              style={{
+                background: timeframe === range ? '#182032' : 'transparent',
+                border: timeframe === range ? '1px solid #26334d' : 'none',
+                color: timeframe === range ? '#ffffff' : theme.colors.textMuted,
+                padding: '2px 8px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 700
+              }}
+            >
+              {range}
+            </button>
+          ))}
+        </div>
+
+        {/* Right Info Badges */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <span>14:38:15 UTC-4</span>
+          <span style={{ color: theme.colors.accentPrimary, cursor: 'pointer' }}>log</span>
+          <span style={{ color: theme.colors.accentPrimary, cursor: 'pointer' }}>auto</span>
+        </div>
       </div>
     </div>
   );
 }
+
+export default TechnicalAnalysisScreen;
+
