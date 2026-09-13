@@ -11,11 +11,12 @@ export function BarChartPrimitive({
   colorKey = null,
   color = '#9672f8',
   activeColor = '#ff7e5f',
+  bgColor = null,
   valueFormatter = (val) => val
 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
-  const [hoverIndex, setHoverIndex] = useState(data.length > 3 ? 3 : 0);
+  const [hoverIndex, setHoverIndex] = useState(data.length > 0 ? 0 : null);
   const [containerWidth, setContainerWidth] = useState(0);
 
   useEffect(() => {
@@ -47,10 +48,14 @@ export function BarChartPrimitive({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
+    const isLightBg = bgColor === '#f8fafc' || bgColor === '#ffffff';
+    const textColor = isLightBg ? '#334155' : theme.colors.textSecondary;
+    const gridColor = isLightBg ? 'rgba(203, 213, 225, 0.6)' : 'rgba(51, 65, 85, 0.25)';
+
     const marginTop = 35;
     const marginBottom = 30;
-    const marginLeft = horizontal ? 60 : 45;
-    const marginRight = 15;
+    const marginLeft = horizontal ? 90 : 45;
+    const marginRight = horizontal ? 40 : 15;
 
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
@@ -64,9 +69,9 @@ export function BarChartPrimitive({
       const ticks = generateNiceTicks(minVal, maxVal, 4);
 
       // Y-Axis Gridlines & Left Labels
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.25)';
+      ctx.strokeStyle = gridColor;
       ctx.lineWidth = 0.5;
-      ctx.fillStyle = theme.colors.textMuted;
+      ctx.fillStyle = textColor;
       ctx.font = `11px ${theme.fonts.mono}`;
       ctx.textAlign = 'right';
 
@@ -89,11 +94,11 @@ export function BarChartPrimitive({
       ctx.textAlign = 'center';
       data.forEach((d, i) => {
         const x = marginLeft + i * stepX + stepX / 2;
-        ctx.fillStyle = theme.colors.textSecondary;
+        ctx.fillStyle = textColor;
         ctx.fillText(String(d[nameKey]), x, height - 8);
       });
 
-      // Draw Bars
+      // Draw Vertical Bars
       data.forEach((d, i) => {
         const val = Number(d[dataKey]) || 0;
         const x = marginLeft + i * stepX + (stepX - barWidth) / 2;
@@ -115,7 +120,7 @@ export function BarChartPrimitive({
         ctx.closePath();
         ctx.fill();
 
-        // Active Bar Floating Value Pill Badge (Matching Divyanshu Shekhar's cute-charts)
+        // Active Bar Floating Value Pill Badge
         if (isHovered) {
           const pillText = String(valueFormatter(val));
           ctx.font = `bold 11px ${theme.fonts.mono}`;
@@ -125,7 +130,7 @@ export function BarChartPrimitive({
           const pillX = x + barWidth / 2 - pillW / 2;
           const pillY = Math.max(6, y - pillH - 6);
 
-          ctx.fillStyle = '#0f172a';
+          ctx.fillStyle = isLightBg ? '#ffffff' : '#0f172a';
           ctx.beginPath();
           ctx.rect(pillX, pillY, pillW, pillH);
           ctx.fill();
@@ -134,30 +139,51 @@ export function BarChartPrimitive({
           ctx.lineWidth = 1.5;
           ctx.stroke();
 
-          ctx.fillStyle = '#ffffff';
+          ctx.fillStyle = isLightBg ? '#0f172a' : '#ffffff';
           ctx.textAlign = 'center';
           ctx.fillText(pillText, x + barWidth / 2, pillY + 15);
         }
       });
     } else {
-      // HORIZONTAL BAR CHART MODE
+      // HORIZONTAL BAR CHART MODE (Top Ticks 0, 30, 61, 91 & Left Category Labels)
+      const ticks = generateNiceTicks(minVal, maxVal, 4);
+
+      // Top X-Axis Gridlines & Top Tick Labels
+      ctx.strokeStyle = gridColor;
+      ctx.lineWidth = 0.5;
+      ctx.fillStyle = textColor;
+      ctx.font = `11px ${theme.fonts.mono}`;
+      ctx.textAlign = 'center';
+
+      ticks.forEach(tVal => {
+        const x = marginLeft + ((tVal - minVal) / (maxVal - minVal)) * chartWidth;
+        if (x >= marginLeft - 5 && x <= marginLeft + chartWidth + 5) {
+          ctx.beginPath();
+          ctx.moveTo(x, marginTop);
+          ctx.lineTo(x, marginTop + chartHeight);
+          ctx.stroke();
+
+          ctx.fillText(String(Math.round(tVal)), x, marginTop - 10);
+        }
+      });
+
       const stepY = chartHeight / data.length;
       const barH = Math.max(8, Math.min(28, stepY * 0.55));
-
-      ctx.fillStyle = theme.colors.textSecondary;
-      ctx.font = `11px ${theme.fonts.main}`;
-      ctx.textAlign = 'right';
 
       data.forEach((d, i) => {
         const val = Number(d[dataKey]) || 0;
         const y = marginTop + i * stepY + (stepY - barH) / 2;
         const barW = (val / maxVal) * chartWidth;
         const isHovered = hoverIndex === i;
-        const barColor = isHovered ? activeColor : (d.color || color);
+        const barColor = isHovered ? activeColor : (d.color || color || '#f59e0b');
 
-        ctx.fillText(String(d[nameKey]), marginLeft - 8, y + barH / 2 + 4);
+        // Left Category Label (Bold when active)
+        ctx.fillStyle = isHovered ? (isLightBg ? '#0f172a' : '#ffffff') : textColor;
+        ctx.font = isHovered ? `bold 12px ${theme.fonts.main}` : `11px ${theme.fonts.main}`;
+        ctx.textAlign = 'right';
+        ctx.fillText(String(d[nameKey]), marginLeft - 12, y + barH / 2 + 4);
 
-        // Rounded Bar Right
+        // Horizontal Bar with Rounded Right End
         ctx.fillStyle = barColor;
         ctx.beginPath();
         const r = Math.min(6, barH / 2);
@@ -169,25 +195,34 @@ export function BarChartPrimitive({
         ctx.closePath();
         ctx.fill();
 
+        // Active Bar Value Display
         if (isHovered) {
           const pillText = String(valueFormatter(val));
           ctx.font = `bold 11px ${theme.fonts.mono}`;
-          ctx.fillStyle = '#ffffff';
+          ctx.fillStyle = isLightBg ? '#0f172a' : '#ffffff';
           ctx.textAlign = 'left';
           ctx.fillText(pillText, marginLeft + barW + 8, y + barH / 2 + 4);
         }
       });
     }
-  }, [data, height, horizontal, dataKey, nameKey, colorKey, color, activeColor, hoverIndex, containerWidth]);
+  }, [data, height, horizontal, dataKey, nameKey, colorKey, color, activeColor, bgColor, hoverIndex, containerWidth]);
 
   const handleMouseMove = (e) => {
     if (!containerRef.current || !data.length) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left - 45;
-    const chartWidth = rect.width - 60;
-    const stepX = chartWidth / data.length;
-    const idx = Math.max(0, Math.min(data.length - 1, Math.floor(x / stepX)));
-    setHoverIndex(idx);
+    if (!horizontal) {
+      const x = e.clientX - rect.left - 45;
+      const chartWidth = rect.width - 60;
+      const stepX = chartWidth / data.length;
+      const idx = Math.max(0, Math.min(data.length - 1, Math.floor(x / stepX)));
+      setHoverIndex(idx);
+    } else {
+      const y = e.clientY - rect.top - 35;
+      const chartHeight = rect.height - 65;
+      const stepY = chartHeight / data.length;
+      const idx = Math.max(0, Math.min(data.length - 1, Math.floor(y / stepY)));
+      setHoverIndex(idx);
+    }
   };
 
   return (
@@ -199,14 +234,15 @@ export function BarChartPrimitive({
         height,
         position: 'relative',
         cursor: 'pointer',
-        background: '#0d0e15',
+        background: bgColor || '#0d0e15',
         borderRadius: theme.radius.md,
         padding: '10px',
-        border: `1px solid ${theme.colors.border}`
+        border: `1px solid ${bgColor === '#f8fafc' || bgColor === '#ffffff' ? '#e2e8f0' : theme.colors.border}`
       }}
     >
       <canvas ref={canvasRef} />
     </div>
   );
 }
+
 
