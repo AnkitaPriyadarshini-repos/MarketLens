@@ -273,14 +273,14 @@ import { CandlestickChart } from './charts/CandlestickChart';
 
 ## Line Chart
 
-Smooth price trend visualization component with gradient area fills and hover point indicators.
+Smooth price trend visualization component with gradient area fills and active target ripple ring.
 
 ### Features
-- Gradient area fill below price trend line.
+- Smooth cubic bezier curve rendering with gradient area fill underneath.
 - Dynamic min/max Y-axis auto-scaling.
-- Hover tooltip showing formatted currency price and percentage change.
+- Active hover target ripple ring with floating price callout badge.
 
-![Line Chart](assets/images/dashboard.png)
+![Line Chart](assets/images/line-chart.svg)
 
 ### Quick Start
 ```jsx
@@ -290,8 +290,7 @@ import { LineChartPrimitive } from './charts/primitives/LineChartPrimitive';
   data={priceSeries}
   height={350}
   showArea={true}
-  color="#10b981"
-  showSma={false}
+  color="#ff7e5f"
   interactive={true}
 />
 ```
@@ -303,10 +302,52 @@ import { LineChartPrimitive } from './charts/primitives/LineChartPrimitive';
 | `data` | `OHLCPoint[]` | `[]` | Normalized data array containing price records |
 | `height` | `number` | `350` | Chart container height in pixels |
 | `showArea` | `boolean` | `true` | Toggles translucent gradient area fill |
-| `color` | `string` | `"#10b981"` | Primary trend line stroke color |
-| `showSma` | `boolean` | `false` | Toggles SMA indicator overlay line |
-| `showBollinger` | `boolean` | `false` | Toggles Bollinger Bands overlay envelope |
-| `interactive` | `boolean` | `true` | Enables hover tooltip popover |
+| `color` | `string` | `"#ff7e5f"` | Primary trend line stroke color |
+| `interactive` | `boolean` | `true` | Enables active hover target ripple ring |
+
+---
+
+## Pie & Donut Chart
+
+Tap-interactive pie and donut chart primitive with popped-out slice highlight and floating label pill badge.
+
+### Features
+- Donut and pie mode via `isDonut` prop.
+- Tap/hover slice highlight popping out segment slightly with color brightness filter.
+- Floating dark label pill badge (`Social 38 (38.0%)`) showing active category, value, and percentage.
+- HTML5 Canvas 2D rendering pipeline with `devicePixelRatio` scaling.
+
+![Pie & Donut Chart](assets/images/pie-donut-chart.svg)
+
+### Quick Start
+```jsx
+import { PieDonutPrimitive } from './charts/primitives/PieDonutPrimitive';
+
+const data = [
+  { name: "Sales", value: 40, color: "#FF6B6B" },
+  { name: "Support", value: 25, color: "#4ECDC4" },
+  { name: "Marketing", value: 20, color: "#45B7D1" },
+  { name: "Ops", value: 15, color: "#FFA07A" }
+];
+
+<PieDonutPrimitive
+  data={data}
+  height={300}
+  isDonut={true}
+  dataKey="value"
+  nameKey="name"
+/>
+```
+
+### API Reference
+
+| Prop | Type | Default | Description |
+|:---|:---|:---|:---|
+| `data` | `PieDataItem[]` | `[]` | Array of slice items containing names, values, and hex colors |
+| `height` | `number` | `300` | Chart container height in pixels |
+| `isDonut` | `boolean` | `true` | Toggles donut mode with inner radius hole |
+| `dataKey` | `string` | `'value'` | Object key for numeric slice value |
+| `nameKey` | `string` | `'name'` | Object key for category label name |
 
 ---
 
@@ -319,7 +360,7 @@ Synchronized Canvas volume histogram primitive displaying trading volume bars al
 - Max volume scaling relative to current viewport slice.
 - Synchronized crosshairs tracking parent candlestick pane.
 
-![Volume Chart](assets/images/volume.png)
+![Volume Chart](assets/images/candlestick.svg)
 
 ### Quick Start
 ```jsx
@@ -348,7 +389,7 @@ Canvas primitive rendering the Relative Strength Index (RSI 14-period) oscillato
 - Overbought (70) and oversold (30) threshold guidelines.
 - Dynamic color highlighting when RSI enters overbought or oversold zones.
 
-![RSI Chart](assets/images/rsi.png)
+![RSI Chart](assets/images/candlestick.svg)
 
 ### Quick Start
 ```jsx
@@ -377,7 +418,7 @@ Canvas primitive rendering Moving Average Convergence Divergence (MACD) signal l
 - Color-coded histogram bars (Green above signal, Red below signal).
 - Aligned crosshair cursor with parent price pane.
 
-![MACD Chart](assets/images/macd.png)
+![MACD Chart](assets/images/candlestick.svg)
 
 ### Quick Start
 ```jsx
@@ -405,10 +446,10 @@ Flagship 4-pane synchronized technical terminal coordinating price, volume, RSI,
 - **Shared Timeline Alignment**: X-axis step synchronization across all 4 stacked chart panes.
 - **Unified Crosshairs**: Pointer movement highlights exact date, price, volume, RSI, and MACD metrics simultaneously across all panes.
 - **Focal-Point Zoom & Pan**: Mouse wheel zooming centered at cursor index with safety clamping.
-- **Timeframe Selector**: Instant switching across `1D`, `1W`, `1M`, `1Y`, `ALL`.
+- **Timeframe Selector**: Instant switching across `15m`, `1h`, `4h`, `1D`, `1W`.
 - **Keyboard Navigation**: Left <kbd>←</kbd> and Right <kbd>→</kbd> arrow key step navigation across historical bars.
 
-![Technical Analysis Studio](assets/images/technical-analysis.png)
+![Technical Analysis Studio](assets/images/technical-analysis.svg)
 
 ### Quick Start
 ```jsx
@@ -435,7 +476,7 @@ Interactive sector performance heatmap grid displaying equities grouped by secto
 - Color scale intensity reflecting 24-hour return percentage (-5% to +5%).
 - Filter by sector (Technology, Healthcare, Financials, Energy, Consumer Cyclical).
 
-![Market Heatmap](assets/images/market-heatmap.png)
+![Market Heatmap](assets/images/heatmap.svg)
 
 ### Quick Start
 ```jsx
@@ -462,7 +503,7 @@ GitHub-style annual trading calendar heatmap displaying daily performance intens
 - Tooltip popover displaying date, daily return %, and traded volume.
 - Interactive year navigation controls.
 
-![Calendar Heatmap](assets/images/calendar-heatmap.png)
+![Calendar Heatmap](assets/images/heatmap.svg)
 
 ### Quick Start
 ```jsx

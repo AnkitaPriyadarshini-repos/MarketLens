@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
+import React, { useRef, useEffect, useState } from 'react';
 import { theme } from '../../theme/designTokens';
-import { formatCurrency, formatPercent } from '../../utils/formatters';
+import { formatCurrency } from '../../utils/formatters';
 
 export function PieDonutPrimitive({
   data = [],
@@ -13,94 +12,157 @@ export function PieDonutPrimitive({
   centerValue = null,
   valueFormatter = (val) => formatCurrency(val)
 }) {
-  const [activeIndex, setActiveIndex] = useState(null);
+  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [hoverIndex, setHoverIndex] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
 
-  const colors = [
-    '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4',
-    '#ec4899', '#34d399', '#f43f5e', '#a855f7', '#64748b'
+  const defaultColors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#8b5cf6',
+    '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#64748b'
   ];
 
-  const totalSum = data.reduce((acc, curr) => acc + (curr[dataKey] || 0), 0);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0) setContainerWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!canvasRef.current || !containerRef.current || !data.length) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = containerRef.current.getBoundingClientRect();
+    const width = rect.width || containerWidth || 350;
+    if (width <= 0 || height <= 0) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const outerR = Math.min(width, height) * 0.38;
+    const innerR = isDonut ? outerR * 0.70 : 0;
+
+    const total = data.reduce((acc, d) => acc + (Number(d[dataKey]) || 0), 0) || 1;
+
+    let startAngle = -Math.PI / 2;
+
+    data.forEach((d, i) => {
+      const val = Number(d[dataKey]) || 0;
+      const sliceAngle = (val / total) * Math.PI * 2;
+      const endAngle = startAngle + sliceAngle;
+      const midAngle = startAngle + sliceAngle / 2;
+
+      const isHovered = hoverIndex === i;
+      const offset = isHovered ? 8 : 0;
+
+      const offsetX = Math.cos(midAngle) * offset;
+      const offsetY = Math.sin(midAngle) * offset;
+
+      const sliceColor = d.color || defaultColors[i % defaultColors.length];
+
+      ctx.save();
+      ctx.translate(offsetX, offsetY);
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, outerR, startAngle, endAngle);
+      if (isDonut) {
+        ctx.arc(centerX, centerY, innerR, endAngle, startAngle, true);
+      } else {
+        ctx.lineTo(centerX, centerY);
+      }
+      ctx.closePath();
+
+      ctx.fillStyle = sliceColor;
+      ctx.fill();
+
+      ctx.restore();
+
+      // Floating Label Pill Badge for Hovered Slice (Matching Divyanshu Shekhar's input_file_3.png)
+      if (isHovered) {
+        const pct = ((val / total) * 100).toFixed(1);
+        const name = String(d[nameKey] || 'Slice');
+        const pillText = `${name}  ${val} (${pct}%)`;
+
+        const badgeX = centerX + Math.cos(midAngle) * (outerR + 25);
+        const badgeY = centerY + Math.sin(midAngle) * (outerR + 25);
+
+        ctx.font = `bold 11px ${theme.fonts.mono}`;
+        const metrics = ctx.measureText(pillText);
+        const pw = metrics.width + 16;
+        const ph = 26;
+        const px = badgeX - pw / 2;
+        const py = badgeY - ph / 2;
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.rect(px, py, pw, ph);
+        ctx.fill();
+
+        ctx.strokeStyle = sliceColor;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText(pillText, badgeX, py + 17);
+      }
+
+      startAngle = endAngle;
+    });
+  }, [data, height, isDonut, dataKey, nameKey, hoverIndex, containerWidth]);
+
+  const handleMouseMove = (e) => {
+    if (!containerRef.current || !data.length) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    let angle = Math.atan2(y, x) + Math.PI / 2;
+    if (angle < 0) angle += Math.PI * 2;
+
+    const total = data.reduce((acc, d) => acc + (Number(d[dataKey]) || 0), 0) || 1;
+    let accAngle = 0;
+    for (let i = 0; i < data.length; i++) {
+      const sliceAngle = ((Number(data[i][dataKey]) || 0) / total) * Math.PI * 2;
+      if (angle >= accAngle && angle <= accAngle + sliceAngle) {
+        setHoverIndex(i);
+        break;
+      }
+      accAngle += sliceAngle;
+    }
+  };
 
   return (
-    <div style={{ width: '100%', height, position: 'relative' }}>
-      {/* Center Donut Label */}
-      {isDonut && (
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          textAlign: 'center',
-          pointerEvents: 'none',
-          zIndex: 5
-        }}>
-          <div style={{ fontSize: '11px', color: theme.colors.textMuted, textTransform: 'uppercase', tracking: '0.05em' }}>
-            {centerTitle}
-          </div>
-          <div style={{ fontSize: '18px', fontWeight: 800, color: theme.colors.textPrimary, fontFamily: theme.fonts.mono, marginTop: '2px' }}>
-            {centerValue !== null ? centerValue : valueFormatter(totalSum)}
-          </div>
-        </div>
-      )}
-
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Tooltip
-            content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                const item = payload[0].payload;
-                const val = item[dataKey];
-                const pct = totalSum > 0 ? (val / totalSum) * 100 : 0;
-                return (
-                  <div style={{
-                    background: '#0f172a',
-                    border: `1px solid ${theme.colors.borderLight}`,
-                    padding: '8px 12px',
-                    borderRadius: theme.radius.md,
-                    color: '#f8fafc',
-                    fontFamily: theme.fonts.main,
-                    fontSize: '12px',
-                    boxShadow: theme.shadows.card
-                  }}>
-                    <div style={{ fontWeight: 600, color: theme.colors.textSecondary }}>{item[nameKey]}</div>
-                    <div style={{ fontWeight: 700, fontSize: '14px', fontFamily: theme.fonts.mono, marginTop: '2px' }}>
-                      {valueFormatter(val)} ({pct.toFixed(1)}%)
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            }}
-          />
-
-          <Pie
-            data={data}
-            dataKey={dataKey}
-            nameKey={nameKey}
-            cx="50%"
-            cy="50%"
-            innerRadius={isDonut ? '60%' : '0%'}
-            outerRadius="85%"
-            paddingAngle={isDonut ? 4 : 2}
-            onMouseEnter={(_, idx) => setActiveIndex(idx)}
-            onMouseLeave={() => setActiveIndex(null)}
-          >
-            {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={entry.color || colors[index % colors.length]}
-                stroke={theme.colors.bgCard}
-                strokeWidth={2}
-                style={{
-                  filter: activeIndex === index ? 'brightness(1.2)' : 'none',
-                  transition: 'all 0.2s ease'
-                }}
-              />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      style={{
+        width: '100%',
+        height,
+        position: 'relative',
+        cursor: 'pointer',
+        background: '#0d0d11',
+        borderRadius: theme.radius.md,
+        padding: '10px',
+        border: `1px solid ${theme.colors.border}`,
+        userSelect: 'none'
+      }}
+    >
+      <canvas ref={canvasRef} />
     </div>
   );
 }
+

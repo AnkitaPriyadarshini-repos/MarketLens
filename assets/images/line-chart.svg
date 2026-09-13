@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="100%">
+  <rect width="800" height="450" fill="#0d0d11" rx="16"/>
+  <rect x="2" y="2" width="796" height="446" fill="none" stroke="#1e2330" stroke-width="2" rx="14"/>
+
+  <!-- Curved Line Path -->
+  <path d="M 120 360 Q 220 180, 320 280 T 520 160 T 720 80" fill="none" stroke="#f59e0b" stroke-width="3"/>
+
+  <!-- Active Target Ripple Ring (Matching Divyanshu Shekhar's input_file_2.png) -->
+  <g transform="translate(280, 250)">
+    <circle cx="0" cy="0" r="32" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.4"/>
+    <circle cx="0" cy="0" r="20" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    <circle cx="0" cy="0" r="10" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    <circle cx="0" cy="0" r="4" fill="#f59e0b"/>
+  </g>
+</svg>
