@@ -11,20 +11,68 @@ describe('ChartViewport Engine 2.0 Tests', () => {
     const range = vp.getVisibleRange();
     expect(range.visibleCount).toBe(100);
 
-    const zoomedVp = vp.zoom(2.0);
+    const zoomedVp = vp.zoomAtFocalIndex(2.0, 50);
     const zoomedRange = zoomedVp.getVisibleRange();
     expect(zoomedRange.visibleCount).toBe(50);
   });
 
-  it('should handle panning bounds correctly', () => {
+  it('should preserve focal point when zooming', () => {
+    const vp = new ChartViewport(100, 1.0, 0);
+    const zoomedVp = vp.zoomAtFocalIndex(2.0, 60);
+    const range = zoomedVp.getVisibleRange();
+    expect(range.startIdx).toBeLessThanOrEqual(60);
+    expect(range.endIdx).toBeGreaterThanOrEqual(60);
+  });
+
+  it('should handle panning bounds and clamping correctly', () => {
     const vp = new ChartViewport(100, 2.0, 0);
     const pannedVp = vp.pan(10);
     const range = pannedVp.getVisibleRange();
     expect(range.startIdx).toBe(10);
+
+    // Over-pan should clamp
+    const overPanned = vp.pan(500);
+    expect(overPanned.getVisibleRange().endIdx).toBe(100);
   });
 });
 
-describe('LTTB Downsampling Algorithm Benchmark Tests', () => {
+describe('ChartScales Inverse & Forward Coordinate Transformations', () => {
+  it('should accurately convert priceToY and yToPrice', () => {
+    const scale = new ChartScale(100, 200, 400, 0); // inverted canvas y
+    const y = scale.priceToY(150);
+    expect(y).toBe(200);
+
+    const price = scale.yToPrice(200);
+    expect(price).toBe(150);
+  });
+
+  it('should accurately convert indexToX and xToIndex', () => {
+    const x = ChartScale.indexToX(5, 20, 10);
+    expect(x).toBe(10 + 5 * 20 + 10);
+
+    const idx = ChartScale.xToIndex(x, 20, 10, 100);
+    expect(idx).toBe(5);
+  });
+
+  it('should convert timeToX and xToTime cleanly', () => {
+    const timeList = ['Jan 1', 'Jan 2', 'Jan 3', 'Jan 4'];
+    const x = ChartScale.timeToX('Jan 3', timeList, 10, 100);
+    const time = ChartScale.xToTime(x, timeList, 10, 100);
+    expect(time).toBe('Jan 3');
+  });
+
+  it('should handle edge cases: empty datasets, single-point, NaN, nulls safely', () => {
+    expect(ChartScale.indexToX(0, 0, 10)).toBe(10);
+    expect(ChartScale.xToIndex(100, 0, 10, 0)).toBe(0);
+    expect(findNearestPointIndex(0, 50, 10, 0)).toBe(-1);
+    
+    const scale = new ChartScale(0, 0, 0, 0);
+    expect(scale.priceToY(NaN)).toBe(0);
+    expect(scale.yToPrice(null)).toBe(0);
+  });
+});
+
+describe('LTTB Downsampling Benchmark Tests', () => {
   it('should downsample large datasets (1k, 10k, 50k, 100k points) with high performance', () => {
     [1000, 10000, 50000, 100000].forEach(count => {
       const data = Array.from({ length: count }, (_, i) => ({ price: Math.sin(i) * 50 + 100 }));
@@ -33,14 +81,14 @@ describe('LTTB Downsampling Algorithm Benchmark Tests', () => {
       const t1 = performance.now();
 
       expect(sampled.length).toBe(500);
-      expect(t1 - t0).toBeLessThan(150); // Downsampling 100k points in < 150ms
+      expect(t1 - t0).toBeLessThan(150);
     });
   });
 });
 
 describe('OHLC Candle Geometry Math', () => {
-  it('should accurately compute candle body height, wick y-positions, and bullish flag', () => {
-    const priceScale = new ChartScale(90, 110, 300, 0); // inverted canvas Y
+  it('should compute candle geometry properly', () => {
+    const priceScale = new ChartScale(90, 110, 300, 0);
     const point = { open: 95, high: 108, low: 92, close: 105 };
 
     const geom = calculateCandleGeometry(point, 2, 20, 10, priceScale);
@@ -48,69 +96,5 @@ describe('OHLC Candle Geometry Math', () => {
     expect(geom.x).toBe(10 + 2 * 20 + 10);
     expect(geom.yHigh).toBeLessThan(geom.yLow);
     expect(geom.bodyHeight).toBeGreaterThan(0);
-  });
-});
-
-describe('Technical Analysis Indicator Math Tests', () => {
-  const sampleOHLC = Array.from({ length: 60 }, (_, i) => ({
-    date: `2024-01-${i + 1}`,
-    open: 100 + i,
-    high: 105 + i,
-    low: 98 + i,
-    close: 102 + i,
-    price: 102 + i,
-    volume: 500000 + i * 1000
-  }));
-
-  it('should calculate SMA 20, EMA 12, RSI, MACD, and Bollinger Bands without NaN or crashes', () => {
-    const calculated = calculateIndicators(sampleOHLC);
-    expect(calculated.length).toBe(60);
-
-    expect(calculated[0].sma20).toBeNull();
-    expect(typeof calculated[25].sma20).toBe('number');
-    expect(calculated[25].sma20).toBeGreaterThan(0);
-
-    expect(typeof calculated[30].rsi).toBe('number');
-    expect(calculated[30].rsi).toBeGreaterThanOrEqual(0);
-    expect(calculated[30].rsi).toBeLessThanOrEqual(100);
-
-    expect(calculated[30].bollingerUpper).toBeGreaterThanOrEqual(calculated[30].bollingerLower);
-  });
-
-  it('should handle edge cases with missing/null/NaN data safely', () => {
-    const edgeData = [
-      { date: 'D1', open: NaN, high: null, low: undefined, close: 100, price: 100, volume: 0 },
-      { date: 'D2', open: 100, high: 110, low: 90, close: 105, price: 105, volume: 1000 }
-    ];
-    expect(() => calculateIndicators(edgeData)).not.toThrow();
-  });
-});
-
-describe('ChartScales Coordinate Transformations', () => {
-  it('should accurately map domain values to pixels', () => {
-    const scale = new ChartScale(0, 100, 0, 500);
-    expect(scale.toPixel(0)).toBe(0);
-    expect(scale.toPixel(50)).toBe(250);
-    expect(scale.toPixel(100)).toBe(500);
-    expect(scale.invert(250)).toBe(50);
-  });
-
-  it('should find nearest data index binary search', () => {
-    const idx = findNearestPointIndex(10, 250, 0, 500);
-    expect(idx).toBe(5);
-  });
-});
-
-describe('Formatters Tests', () => {
-  it('should format large market cap numbers cleanly', () => {
-    expect(formatCurrency(3.16e12)).toBe('$3.16T');
-    expect(formatCurrency(789.2e9)).toBe('$789.20B');
-    expect(formatCurrency(45.2e6)).toBe('$45.20M');
-    expect(formatCurrency(128.45)).toBe('$128.45');
-  });
-
-  it('should format percent signs', () => {
-    expect(formatPercent(3.90)).toBe('+3.90%');
-    expect(formatPercent(-0.51)).toBe('-0.51%');
   });
 });

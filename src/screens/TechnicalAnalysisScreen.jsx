@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  ResponsiveContainer, AreaChart, Area, YAxis, BarChart, Bar, Cell 
-} from 'recharts';
 import { Sliders, RefreshCw, Layers } from 'lucide-react';
 import { theme } from '../theme/designTokens';
 import { formatCurrency } from '../utils/formatters';
 import { CandlestickPrimitive } from '../charts/primitives/CandlestickPrimitive';
 import { VolumePrimitive } from '../charts/primitives/VolumePrimitive';
+import { RsiPrimitive } from '../charts/primitives/RsiPrimitive';
+import { MacdPrimitive } from '../charts/primitives/MacdPrimitive';
 
 export function TechnicalAnalysisScreen({
   asset = null,
@@ -28,7 +27,7 @@ export function TechnicalAnalysisScreen({
     macd: true
   });
 
-  // Shared Hover Cursor State across all panes
+  // Shared Authoritative Crosshair Hover Cursor State across ALL 4 Panes
   const [hoverIndex, setHoverIndex] = useState(null);
 
   useEffect(() => {
@@ -70,7 +69,7 @@ export function TechnicalAnalysisScreen({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, fontFamily: theme.fonts.display }}>
-            Synchronized Multi-Pane Technical Studio: {symbol}
+            Technical Studio 2.0: {symbol}
           </h2>
           <span style={{ fontSize: '12px', color: theme.colors.textMuted }}>
             {data.length} Bars Calculated
@@ -107,7 +106,7 @@ export function TechnicalAnalysisScreen({
         </div>
       </div>
 
-      {/* Multi-Pane Synchronized Container */}
+      {/* Multi-Pane Synchronized Custom Canvas Terminal */}
       <div style={{
         background: theme.colors.bgCard,
         border: `1px solid ${theme.colors.border}`,
@@ -126,7 +125,7 @@ export function TechnicalAnalysisScreen({
             {/* PANE 1: Price Action */}
             <div>
               <div style={{ fontSize: '11px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '6px' }}>
-                PANE 1: PRICE ACTION & TECHNICAL OVERLAYS
+                PANE 1: PRICE ACTION & OVERLAYS
               </div>
               <CandlestickPrimitive
                 data={data}
@@ -160,7 +159,7 @@ export function TechnicalAnalysisScreen({
               </div>
             )}
 
-            {/* PANE 3: Synchronized RSI Oscillator */}
+            {/* PANE 3: Synchronized Custom Canvas RSI Oscillator */}
             {indicators.rsi && (
               <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '4px' }}>
@@ -169,18 +168,16 @@ export function TechnicalAnalysisScreen({
                     RSI: {activeHoverPoint ? activeHoverPoint.rsi : data[data.length - 1]?.rsi}
                   </span>
                 </div>
-                <div style={{ height: 90, width: '100%' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                      <YAxis domain={[0, 100]} ticks={[30, 50, 70]} axisLine={false} tickLine={false} tick={{ fill: theme.colors.textMuted, fontSize: 10 }} orientation="right" />
-                      <Area type="monotone" dataKey="rsi" stroke={theme.colors.accentGold} strokeWidth={1.5} fill="rgba(245, 158, 11, 0.1)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
+                <RsiPrimitive
+                  data={data}
+                  height={90}
+                  hoverIndex={hoverIndex}
+                  onHoverIndex={setHoverIndex}
+                />
               </div>
             )}
 
-            {/* PANE 4: Synchronized MACD Histogram */}
+            {/* PANE 4: Synchronized Custom Canvas MACD Histogram */}
             {indicators.macd && (
               <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, color: theme.colors.textSecondary, marginBottom: '4px' }}>
@@ -189,18 +186,12 @@ export function TechnicalAnalysisScreen({
                     MACD: {activeHoverPoint ? activeHoverPoint.macdLine : data[data.length - 1]?.macdLine} | Signal: {activeHoverPoint ? activeHoverPoint.macdSignal : data[data.length - 1]?.macdSignal}
                   </span>
                 </div>
-                <div style={{ height: 90, width: '100%' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.colors.textMuted, fontSize: 10 }} orientation="right" />
-                      <Bar dataKey="macdHist">
-                        {data.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.macdHist >= 0 ? theme.colors.gain : theme.colors.loss} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <MacdPrimitive
+                  data={data}
+                  height={90}
+                  hoverIndex={hoverIndex}
+                  onHoverIndex={setHoverIndex}
+                />
               </div>
             )}
           </>
