@@ -452,27 +452,29 @@ export function generateChartData(assetSymbol, timeframe = '1M') {
   const baseAsset = MARKET_ASSETS.find(a => a.symbol === assetSymbol) || MARKET_ASSETS[0];
   const currentPrice = baseAsset.price;
   
-  let pointsCount = 30;
+  let pointsCount = 60;
   let volatility = 0.015;
-  let dateStepDays = 1;
 
-  if (timeframe === '1D') {
-    pointsCount = 48; // 5-minute ticks over 4 hours or trading day
-    volatility = 0.004;
-  } else if (timeframe === '1W') {
-    pointsCount = 35; // hourly ticks
+  if (timeframe === '15m' || timeframe === '1h' || timeframe === '4h') {
+    pointsCount = 60;
+    volatility = 0.005;
+  } else if (timeframe === '1D') {
+    pointsCount = 65;
     volatility = 0.008;
+  } else if (timeframe === '1W') {
+    pointsCount = 70;
+    volatility = 0.012;
   } else if (timeframe === '1M') {
-    pointsCount = 30;
+    pointsCount = 60;
     volatility = 0.018;
   } else if (timeframe === '6M') {
-    pointsCount = 60;
+    pointsCount = 90;
     volatility = 0.035;
   } else if (timeframe === '1Y') {
-    pointsCount = 52; // weekly bars
+    pointsCount = 100;
     volatility = 0.05;
   } else if (timeframe === 'ALL') {
-    pointsCount = 80;
+    pointsCount = 120;
     volatility = 0.08;
   }
 

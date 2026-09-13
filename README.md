@@ -8,7 +8,7 @@
 
 A high-performance financial analytics and visualization platform for interactive market data, technical analysis, portfolio intelligence, and custom chart rendering.
 
-![MarketLens Technical Analysis Studio](assets/images/technical-analysis.svg)
+![MarketLens Technical Analysis Studio](assets/images/technical-analysis.png)
 *MarketLens 4-pane synchronized technical analysis studio featuring Candlestick OHLC, Volume, RSI oscillator, and MACD indicators with unified crosshairs.*
 
 ---
@@ -449,7 +449,7 @@ Flagship 4-pane synchronized technical terminal coordinating price, volume, RSI,
 - **Timeframe Selector**: Instant switching across `15m`, `1h`, `4h`, `1D`, `1W`.
 - **Keyboard Navigation**: Left <kbd>←</kbd> and Right <kbd>→</kbd> arrow key step navigation across historical bars.
 
-![Technical Analysis Studio](assets/images/technical-analysis.svg)
+![Technical Analysis Studio](assets/images/technical-analysis.png)
 
 ### Quick Start
 ```jsx
