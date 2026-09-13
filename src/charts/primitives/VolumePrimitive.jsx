@@ -18,6 +18,8 @@ export function VolumePrimitive({
     const ctx = canvas.getContext('2d');
     const rect = containerRef.current.getBoundingClientRect();
     const width = rect.width;
+    if (width <= 0 || height <= 0) return;
+
     const dpr = window.devicePixelRatio || 1;
 
     canvas.width = width * dpr;
@@ -25,7 +27,7 @@ export function VolumePrimitive({
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
 
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
     const marginTop = 5;
@@ -43,9 +45,8 @@ export function VolumePrimitive({
     const stepX = chartWidth / data.length;
     const barWidth = Math.max(2, stepX * 0.7);
 
-    // Draw Volume Bars
     data.forEach((d, i) => {
-      const x = marginLeft + i * stepX + stepX / 2;
+      const x = ChartScale.indexToX(i, stepX, marginLeft);
       const isBull = d.close >= d.open;
       const barH = (d.volume / maxVolume) * chartHeight;
       const y = marginTop + chartHeight - barH;
@@ -54,9 +55,8 @@ export function VolumePrimitive({
       ctx.fillRect(x - barWidth / 2, y, barWidth, barH);
     });
 
-    // Synchronized Crosshair Line
     if (hoverIndex !== null && hoverIndex >= 0 && hoverIndex < data.length) {
-      const x = marginLeft + hoverIndex * stepX + stepX / 2;
+      const x = ChartScale.indexToX(hoverIndex, stepX, marginLeft);
 
       ctx.strokeStyle = 'rgba(248, 250, 252, 0.5)';
       ctx.lineWidth = 1;
@@ -77,7 +77,7 @@ export function VolumePrimitive({
     const x = e.clientX - rect.left - 10;
     const chartWidth = rect.width - 75;
     const stepX = chartWidth / data.length;
-    const idx = Math.min(data.length - 1, Math.max(0, Math.floor(x / stepX)));
+    const idx = ChartScale.xToIndex(x, stepX, 10, data.length);
     if (onHoverIndex) onHoverIndex(idx);
   };
 

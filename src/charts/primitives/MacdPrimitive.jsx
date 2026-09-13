@@ -18,6 +18,8 @@ export function MacdPrimitive({
     const ctx = canvas.getContext('2d');
     const rect = containerRef.current.getBoundingClientRect();
     const width = rect.width;
+    if (width <= 0 || height <= 0) return;
+
     const dpr = window.devicePixelRatio || 1;
 
     canvas.width = width * dpr;
@@ -25,7 +27,7 @@ export function MacdPrimitive({
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
 
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
     const marginTop = 10;
@@ -53,7 +55,6 @@ export function MacdPrimitive({
     const stepX = chartWidth / data.length;
     const barWidth = Math.max(2, stepX * 0.7);
 
-    // Zero Line
     ctx.strokeStyle = theme.colors.borderLight;
     ctx.lineWidth = 0.8;
     ctx.beginPath();
@@ -61,7 +62,6 @@ export function MacdPrimitive({
     ctx.lineTo(marginLeft + chartWidth, zeroY);
     ctx.stroke();
 
-    // Draw MACD Histogram Bars
     data.forEach((d, i) => {
       if (d.macdHist !== undefined && d.macdHist !== null) {
         const x = ChartScale.indexToX(i, stepX, marginLeft);
@@ -75,7 +75,6 @@ export function MacdPrimitive({
       }
     });
 
-    // Synchronized Crosshair Line
     if (hoverIndex !== null && hoverIndex >= 0 && hoverIndex < data.length) {
       const x = ChartScale.indexToX(hoverIndex, stepX, marginLeft);
 

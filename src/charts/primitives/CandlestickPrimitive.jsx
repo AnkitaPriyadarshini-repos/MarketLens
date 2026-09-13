@@ -1,6 +1,7 @@
-import React, { useRef, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useEffect, useState, forwardRef } from 'react';
 import { theme } from '../../theme/designTokens';
 import { formatCurrency } from '../../utils/formatters';
+import { ChartScale, calculateCandleGeometry } from '../core/ChartScales';
 
 export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
   data = [],
@@ -51,6 +52,8 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     const ctx = canvas.getContext('2d');
     const rect = containerRef.current.getBoundingClientRect();
     const width = rect.width;
+    if (width <= 0 || height <= 0) return;
+
     const dpr = window.devicePixelRatio || 1;
 
     canvas.width = width * dpr;
@@ -58,26 +61,24 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
 
-    ctx.scale(dpr, dpr);
+    // Reset transform to prevent scale multiplication across re-renders
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    // Margins
     const marginTop = 24;
     const marginBottom = 28;
-    const marginRight = 65; // Y-axis price badge column
+    const marginRight = 65;
     const marginLeft = 10;
 
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
 
-    // Apply Zoom & Pan window slice
     const visibleCount = Math.max(10, Math.floor(data.length / zoomLevel));
     const startIdx = Math.max(0, Math.min(data.length - visibleCount, Math.floor(panOffset)));
     const visibleData = data.slice(startIdx, startIdx + visibleCount);
 
     if (!visibleData.length) return;
 
-    // Calculate Min/Max Price and Volume
     let minPrice = Infinity;
     let maxPrice = -Infinity;
     let maxVolume = 0;
@@ -89,11 +90,9 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     });
 
     const priceRange = (maxPrice - minPrice) || 1;
-    const candleWidth = Math.max(2, (chartWidth / visibleData.length) * 0.7);
-    const stepX = chartWidth / visibleData.length;
+    const priceScale = new ChartScale(minPrice, maxPrice, marginTop + chartHeight, marginTop);
 
-    const getX = (i) => marginLeft + i * stepX + stepX / 2;
-    const getY = (price) => marginTop + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
+    const stepX = chartWidth / visibleData.length;
 
     // Grid Lines & Price Labels
     ctx.strokeStyle = theme.colors.border;
@@ -105,7 +104,7 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     const gridLines = 5;
     for (let i = 0; i <= gridLines; i++) {
       const priceVal = minPrice + (priceRange * i) / gridLines;
-      const yPos = getY(priceVal);
+      const yPos = priceScale.priceToY(priceVal);
       
       ctx.beginPath();
       ctx.moveTo(marginLeft, yPos);
@@ -119,41 +118,32 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     if (showVolume && maxVolume > 0) {
       const volumeMaxH = chartHeight * 0.25;
       visibleData.forEach((d, i) => {
-        const x = getX(i);
+        const x = ChartScale.indexToX(i, stepX, marginLeft);
         const isBull = d.close >= d.open;
         const volH = (d.volume / maxVolume) * volumeMaxH;
         const y = marginTop + chartHeight - volH;
 
         ctx.fillStyle = isBull ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)';
-        ctx.fillRect(x - candleWidth / 2, y, candleWidth, volH);
+        ctx.fillRect(x - (stepX * 0.7) / 2, y, stepX * 0.7, volH);
       });
     }
 
-    // Candlesticks (Wicks + Bodies)
+    // Candlesticks via CandleGeometry Engine
     visibleData.forEach((d, i) => {
-      const x = getX(i);
-      const isBull = d.close >= d.open;
-      const color = isBull ? theme.colors.gain : theme.colors.loss;
-
-      const yHigh = getY(d.high);
-      const yLow = getY(d.low);
-      const yOpen = getY(d.open);
-      const yClose = getY(d.close);
+      const geom = calculateCandleGeometry(d, i, stepX, marginLeft, priceScale);
+      const color = geom.isBullish ? theme.colors.gain : theme.colors.loss;
 
       // Wick
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(x, yHigh);
-      ctx.lineTo(x, yLow);
+      ctx.moveTo(geom.x, geom.yHigh);
+      ctx.lineTo(geom.x, geom.yLow);
       ctx.stroke();
 
       // Body
-      const bodyY = Math.min(yOpen, yClose);
-      const bodyH = Math.max(1.5, Math.abs(yOpen - yClose));
-
       ctx.fillStyle = color;
-      ctx.fillRect(x - candleWidth / 2, bodyY, candleWidth, bodyH);
+      ctx.fillRect(geom.x - geom.candleWidth / 2, geom.bodyY, geom.candleWidth, geom.bodyHeight);
     });
 
     // Technical SMA 20 Overlay
@@ -164,8 +154,8 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       let started = false;
       visibleData.forEach((d, i) => {
         if (d.sma20) {
-          const x = getX(i);
-          const y = getY(d.sma20);
+          const x = ChartScale.indexToX(i, stepX, marginLeft);
+          const y = priceScale.priceToY(d.sma20);
           if (!started) { ctx.moveTo(x, y); started = true; }
           else { ctx.lineTo(x, y); }
         }
@@ -183,8 +173,8 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       let started = false;
       visibleData.forEach((d, i) => {
         if (d.bollingerUpper) {
-          const x = getX(i);
-          const y = getY(d.bollingerUpper);
+          const x = ChartScale.indexToX(i, stepX, marginLeft);
+          const y = priceScale.priceToY(d.bollingerUpper);
           if (!started) { ctx.moveTo(x, y); started = true; }
           else { ctx.lineTo(x, y); }
         }
@@ -195,8 +185,8 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       started = false;
       visibleData.forEach((d, i) => {
         if (d.bollingerLower) {
-          const x = getX(i);
-          const y = getY(d.bollingerLower);
+          const x = ChartScale.indexToX(i, stepX, marginLeft);
+          const y = priceScale.priceToY(d.bollingerLower);
           if (!started) { ctx.moveTo(x, y); started = true; }
           else { ctx.lineTo(x, y); }
         }
@@ -209,8 +199,8 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     const activeIdxInVisible = hoverIndex !== null ? hoverIndex - startIdx : null;
     if (activeIdxInVisible !== null && activeIdxInVisible >= 0 && activeIdxInVisible < visibleData.length) {
       const activeItem = visibleData[activeIdxInVisible];
-      const x = getX(activeIdxInVisible);
-      const y = getY(activeItem.close);
+      const x = ChartScale.indexToX(activeIdxInVisible, stepX, marginLeft);
+      const y = priceScale.priceToY(activeItem.close);
 
       ctx.strokeStyle = 'rgba(248, 250, 252, 0.6)';
       ctx.lineWidth = 1;
@@ -252,7 +242,7 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
     const visibleCount = Math.max(10, Math.floor(data.length / zoomLevel));
     const startIdx = Math.max(0, Math.min(data.length - visibleCount, Math.floor(panOffset)));
     const stepX = chartWidth / visibleCount;
-    const relIdx = Math.min(visibleCount - 1, Math.max(0, Math.floor(x / stepX)));
+    const relIdx = ChartScale.xToIndex(x, stepX, 0, visibleCount);
     const absIdx = startIdx + relIdx;
 
     setHoverIndex(absIdx);
@@ -273,7 +263,6 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
       onMouseLeave={handleMouseLeave}
       style={{ width: '100%', height, position: 'relative', cursor: 'crosshair', userSelect: 'none' }}
     >
-      {/* Demo Data Notice Badge */}
       {demoDataLabel && (
         <div style={{
           position: 'absolute',
@@ -293,7 +282,6 @@ export const CandlestickPrimitive = forwardRef(function CandlestickPrimitive({
         </div>
       )}
 
-      {/* Hover OHLC Banner */}
       {activePoint && (
         <div style={{
           position: 'absolute',

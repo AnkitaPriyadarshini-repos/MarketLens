@@ -18,6 +18,8 @@ export function RsiPrimitive({
     const ctx = canvas.getContext('2d');
     const rect = containerRef.current.getBoundingClientRect();
     const width = rect.width;
+    if (width <= 0 || height <= 0) return;
+
     const dpr = window.devicePixelRatio || 1;
 
     canvas.width = width * dpr;
@@ -25,7 +27,7 @@ export function RsiPrimitive({
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
 
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
     const marginTop = 10;
@@ -39,7 +41,6 @@ export function RsiPrimitive({
     const rsiScale = new ChartScale(0, 100, marginTop + chartHeight, marginTop);
     const stepX = chartWidth / data.length;
 
-    // Draw Overbought (70) and Oversold (30) Guidelines
     ctx.strokeStyle = theme.colors.borderLight;
     ctx.lineWidth = 0.8;
     ctx.setLineDash([3, 3]);
@@ -58,7 +59,6 @@ export function RsiPrimitive({
 
     ctx.setLineDash([]);
 
-    // Draw RSI Line Curve
     ctx.strokeStyle = theme.colors.accentGold;
     ctx.lineWidth = 1.8;
     ctx.beginPath();
@@ -74,7 +74,6 @@ export function RsiPrimitive({
     });
     ctx.stroke();
 
-    // Synchronized Crosshair Cursor
     if (hoverIndex !== null && hoverIndex >= 0 && hoverIndex < data.length) {
       const x = ChartScale.indexToX(hoverIndex, stepX, marginLeft);
 
